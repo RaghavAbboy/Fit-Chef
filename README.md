@@ -1,4 +1,4 @@
-# cursor_fitchef
+# Cursor Fitchef
 
 A Flutter project for FitChef application.
 
