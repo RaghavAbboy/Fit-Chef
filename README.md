@@ -21,23 +21,39 @@ A Flutter project for FitChef application.
    cd cursor_fitchef
    ```
 
-2. Install Flutter dependencies:
+2. Run the automated setup script:
+   ```bash
+   # Make the script executable
+   chmod +x setup.sh
+
+   # Run the setup script
+   ./setup.sh
+   ```
+   This script will:
+   - Verify required tools are installed
+   - Install Flutter dependencies
+   - Set up iOS dependencies with CocoaPods
+   - Clean and rebuild the project
+
+   If you prefer manual setup, follow steps 3-5 below.
+
+3. (Manual) Install Flutter dependencies:
    ```bash
    flutter pub get
    ```
 
-3. Install iOS dependencies:
+4. (Manual) Install iOS dependencies:
    ```bash
    cd ios
    pod install
    cd ..
    ```
 
-4. Setup simulators/emulators:
+5. Setup simulators/emulators:
    - For iOS: Open Xcode, go to Xcode > Open Developer Tool > Simulator
    - For Android: Open Android Studio > Tools > Device Manager > Create Device
 
-5. Run the app:
+6. Run the app:
    ```bash
    # Check available devices
    flutter devices
@@ -61,6 +77,17 @@ A Flutter project for FitChef application.
   flutter doctor
   ```
   Follow the recommendations to resolve any issues.
+
+### Git Commands
+
+For quick git operations, use the provided script:
+```bash
+# Make the script executable
+chmod +x git_push.sh
+
+# Use the script (replace message with your commit message)
+./git_push.sh "your commit message"
+```
 
 ## Additional Resources
 
