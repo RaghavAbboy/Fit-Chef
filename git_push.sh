@@ -12,6 +12,15 @@ COMMIT_MESSAGE="$1"
 
 echo "🚀 Starting git push process..."
 
+# Get the current branch name
+BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
+if [ -z "$BRANCH_NAME" ]; then
+    # If no branch exists, create main branch
+    echo "📝 Initializing main branch..."
+    git checkout -b main
+    BRANCH_NAME="main"
+fi
+
 # Add all files
 echo "📦 Adding all files..."
 git add .
@@ -20,8 +29,8 @@ git add .
 echo "💬 Committing with message: $COMMIT_MESSAGE"
 git commit -m "$COMMIT_MESSAGE"
 
-# Push to origin master
-echo "⬆️  Pushing to origin master..."
-git push origin master
+# Push to origin with the current branch name
+echo "⬆️  Pushing to origin $BRANCH_NAME..."
+git push origin $BRANCH_NAME
 
 echo "✅ Done! Changes have been pushed to remote repository" 
