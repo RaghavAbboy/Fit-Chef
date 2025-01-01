@@ -21,6 +21,18 @@ if [ -z "$BRANCH_NAME" ]; then
     BRANCH_NAME="main"
 fi
 
+# Stash any current changes
+echo "📦 Stashing current changes..."
+git stash
+
+# Pull latest changes first
+echo "⬇️  Pulling latest changes from origin $BRANCH_NAME..."
+git pull origin $BRANCH_NAME
+
+# Pop the stashed changes
+echo "📦 Restoring current changes..."
+git stash pop
+
 # Add all files
 echo "📦 Adding all files..."
 git add .
