@@ -1,5 +1,5 @@
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'dart:math' as math;
 
 void main() {
   runApp(const MyApp());
@@ -15,6 +15,22 @@ class MyApp extends StatelessWidget {
       home: FallingLeavesScreen(),
     );
   }
+}
+
+abstract class FallingFruit {
+  late final double x;
+  late final double y;
+  late final double size;
+  late final double rotationSpeed;
+
+  FallingFruit() {
+    x = math.Random().nextDouble() * 1000;
+    y = math.Random().nextDouble() * 800;
+    size = 15 + math.Random().nextDouble() * 25;
+    rotationSpeed = 0.2 + math.Random().nextDouble() * 1.0;
+  }
+
+  String get emoji;
 }
 
 class FallingLeavesScreen extends StatefulWidget {
@@ -57,20 +73,11 @@ class _FallingLeavesScreenState extends State<FallingLeavesScreen>
     return Scaffold(
       body: Stack(
         children: [
-          // Background gradient
           Container(
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Color(0xFFE8F5E9),
-                  Color(0xFFC8E6C9),
-                ],
-              ),
+              color: Colors.white,
             ),
           ),
-          // Falling fruits and vegetables
           ...fruits.map((fruit) {
             return AnimatedBuilder(
               animation: _controller,
@@ -97,14 +104,11 @@ class _FallingLeavesScreenState extends State<FallingLeavesScreen>
               },
             );
           }).toList(),
-          // Text content
           Container(
             width: double.infinity,
             child: Column(
               children: [
-                SizedBox(
-                    height: MediaQuery.of(context).size.height *
-                        0.3), // Adjust this value to move text up/down
+                SizedBox(height: MediaQuery.of(context).size.height * 0.3),
                 Text(
                   'Fit Chef',
                   style: TextStyle(
@@ -150,22 +154,6 @@ class _FallingLeavesScreenState extends State<FallingLeavesScreen>
       ),
     );
   }
-}
-
-abstract class FallingFruit {
-  late final double x;
-  late final double y;
-  late final double size;
-  late final double rotationSpeed;
-
-  FallingFruit() {
-    x = math.Random().nextDouble() * 1000;
-    y = math.Random().nextDouble() * 800;
-    size = 20 + math.Random().nextDouble() * 12;
-    rotationSpeed = 0.5 + math.Random().nextDouble() * 2;
-  }
-
-  String get emoji;
 }
 
 class FallingBlueberry extends FallingFruit {
