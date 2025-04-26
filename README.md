@@ -136,3 +136,8 @@ If you encounter any issues:
    cd ..
    flutter clean
    ```
+
+## Features
+
+- Animated falling fruits and vegetables on the landing page
+- Sign in with Google is currently supported on the web version of the app
