@@ -21,28 +21,18 @@ A Flutter project for FitChef application.
    cd cursor_fitchef
    ```
 
-2. Run the automated setup script:
+2. Run the setup script (see [Scripts](#project-scripts) section for details):
    ```bash
-   # Make the script executable
-   chmod +x setup.sh
-
-   # Run the setup script
    ./setup.sh
    ```
-   This script will:
-   - Verify required tools are installed
-   - Install Flutter dependencies
-   - Set up iOS dependencies with CocoaPods
-   - Clean and rebuild the project
+   This will verify required tools, install dependencies, and prepare the project.
 
-   If you prefer manual setup, follow steps 3-5 below.
-
-3. (Manual) Install Flutter dependencies:
+3. (Manual alternative) Install Flutter dependencies:
    ```bash
    flutter pub get
    ```
 
-4. (Manual) Install iOS dependencies:
+4. (Manual alternative) Install iOS dependencies:
    ```bash
    cd ios
    pod install
@@ -53,16 +43,58 @@ A Flutter project for FitChef application.
    - For iOS: Open Xcode, go to Xcode > Open Developer Tool > Simulator
    - For Android: Open Android Studio > Tools > Device Manager > Create Device
 
-6. Run the app:
-   ```bash
-   # Check available devices
-   flutter devices
-   
-   # Run on specific device
-   flutter run -d <device_id>
-   ```
+### Running the App (iOS, Android, Web)
 
-### Common Issues and Solutions
+You can run the app on different platforms using the provided script:
+
+- **iOS Simulator:**
+  ```bash
+  ./run_app.sh ios
+  ```
+  (Opens the iOS Simulator and runs the app)
+
+- **Android Emulator:**
+  ```bash
+  ./run_app.sh android <android_device_id>
+  ```
+  (Start your Android emulator from Android Studio or with `flutter emulators`. Replace `<android_device_id>` with your device ID.)
+
+- **Web (Chrome):**
+  ```bash
+  ./run_app.sh web
+  ```
+  (This will launch the app in Google Chrome.)
+
+To see all available devices:
+```bash
+flutter devices
+```
+
+**Tip:** To log the output of any command you run (for sharing or debugging), use the `run_and_log.sh` script as described in the Project Scripts section below.
+
+## Project Scripts
+
+This project provides several scripts to automate common tasks. Make sure each script is executable:
+```bash
+chmod +x setup.sh git_push.sh git_pull.sh run_app.sh
+```
+
+| Script           | Purpose                                                                                 | Usage Example                                  |
+| ---------------- | --------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| `setup.sh`       | Sets up the Flutter project: checks for tools, installs dependencies, cleans builds.     | `./setup.sh`                                   |
+| `git_push.sh`    | Stashes changes, pulls latest, restores changes, adds, commits, and pushes to git.      | `./git_push.sh "your commit message"`          |
+| `git_pull.sh`    | Stashes changes, pulls latest from git, restores changes.                               | `./git_pull.sh`                                |
+| `run_app.sh`     | Runs the Flutter app in iOS, Android, or Web mode based on the argument provided.       | `./run_app.sh ios`<br>`./run_app.sh android <android_device_id>`<br>`./run_app.sh web` |
+| `run_and_log.sh` | Runs any command, logs its output to last_command_output.txt, and prints the output.    | `./run_and_log.sh ls -la`                      |
+
+**Details:**
+- `setup.sh`: Ensures your environment is ready for development (Flutter, CocoaPods, dependencies, clean build).
+- `git_push.sh`: Automates the process of safely pushing your changes to the current git branch. Requires a commit message.
+- `git_pull.sh`: Safely pulls the latest changes from the current git branch, preserving your local changes.
+- `run_app.sh`: Runs the Flutter app in the selected mode: iOS (opens Simulator), Android (requires device ID), or Web (Chrome browser).
+- `run_and_log.sh`: Runs any command you provide, logs its output (stdout and stderr) to `last_command_output.txt` (overwriting previous output), and prints the output to the terminal. Useful for sharing command output with others or for debugging.
+
+## Common Issues and Solutions
 
 - If you encounter CocoaPods issues:
   ```bash
@@ -77,17 +109,6 @@ A Flutter project for FitChef application.
   flutter doctor
   ```
   Follow the recommendations to resolve any issues.
-
-### Git Commands
-
-For quick git operations, use the provided script:
-```bash
-# Make the script executable
-chmod +x git_push.sh
-
-# Use the script (replace message with your commit message)
-./git_push.sh "your commit message"
-```
 
 ## Additional Resources
 
