@@ -63,7 +63,7 @@ You can run the app on different platforms using the provided script:
   ```bash
   ./run_app.sh web
   ```
-  (This will launch the app in Google Chrome.)
+  (This will launch the app in Google Chrome on port 3000 by default. Make sure your Supabase and Google Cloud redirect URIs use port 3000.)
 
 To see all available devices:
 ```bash
@@ -94,6 +94,8 @@ chmod +x setup.sh git_push.sh git_pull.sh run_app.sh
 - `run_app.sh`: Runs the Flutter app in the selected mode: iOS (opens Simulator), Android (requires device ID), or Web (Chrome browser).
 - `run_and_log.sh`: Runs any command you provide, logs its output (stdout and stderr) to `last_command_output.txt` (overwriting previous output), and prints the output to the terminal. Useful for sharing command output with others or for debugging.
 
+# Web mode uses port 3000 by default.
+
 ## Common Issues and Solutions
 
 - If you encounter CocoaPods issues:
@@ -115,6 +117,11 @@ chmod +x setup.sh git_push.sh git_pull.sh run_app.sh
 - [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
 - [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
 - [Flutter Documentation](https://docs.flutter.dev/)
+
+## External Services
+
+- [Supabase Dashboard](https://app.supabase.com/): Manage your database, authentication, and project settings.
+- [Google Cloud Console](https://console.cloud.google.com/apis/credentials): Set up OAuth credentials for Google sign-in.
 
 ## Troubleshooting
 

@@ -30,8 +30,8 @@ case $MODE in
     flutter run -d $DEVICE_ID
     ;;
   web)
-    echo "🌐 Running Flutter app in Chrome..."
-    flutter run -d chrome
+    echo "🌐 Running Flutter app in Chrome on port 3000..."
+    flutter run -d chrome --web-port=3000
     ;;
   *)
     echo "❌ Invalid mode: $MODE"

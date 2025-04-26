@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Supabase.initialize(
+    url: 'https://daoqplvfscgawerappav.supabase.co',
+    anonKey:
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRhb3FwbHZmc2NnYXdlcmFwcGF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU3MDk3MjcsImV4cCI6MjA2MTI4NTcyN30.0MFnjpcupSAmpRQCn0t3TRIIGlI5wGgl-IgZlgCJdm4',
+  );
   runApp(const MyApp());
 }
 
@@ -12,28 +19,58 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: FallingLeavesScreen(),
+      home: AuthGate(),
     );
   }
 }
 
-abstract class FallingFruit {
-  late final double x;
-  late final double y;
-  late final double size;
-  late final double rotationSpeed;
+class AuthGate extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<AuthState>(
+      stream: Supabase.instance.client.auth.onAuthStateChange,
+      builder: (context, snapshot) {
+        final session = Supabase.instance.client.auth.currentSession;
+        if (session != null) {
+          return HomePage();
+        } else {
+          return FallingLeavesScreen();
+        }
+      },
+    );
+  }
+}
 
-  FallingFruit() {
-    x = math.Random().nextDouble() * 1000;
-    y = math.Random().nextDouble() * 800;
-    size = 15 + math.Random().nextDouble() * 25;
-    rotationSpeed = 0.2 + math.Random().nextDouble() * 1.0;
+// Set this to true to use images instead of emojis (make sure assets exist)
+const bool useImages = false;
+
+final math.Random globalRandom =
+    math.Random(42); // Fixed seed for reproducibility
+
+abstract class FallingFruit {
+  final double x;
+  final double y;
+  final double size;
+  final double rotationSpeed;
+
+  FallingFruit(math.Random random)
+      : x = random.nextDouble() * 1000,
+        y = random.nextDouble() * 800,
+        size = 15 + random.nextDouble() * 25,
+        rotationSpeed = 0.2 + random.nextDouble() * 1.0 {
+    // Debug log for reproducibility
+    // ignore: avoid_print
+    print(
+        '${runtimeType.toString()} - x: $x, y: $y, size: $size, rotationSpeed: $rotationSpeed');
   }
 
   String get emoji;
+  String get imageAsset;
 }
 
 class FallingLeavesScreen extends StatefulWidget {
+  const FallingLeavesScreen({super.key});
+
   @override
   _FallingLeavesScreenState createState() => _FallingLeavesScreenState();
 }
@@ -41,17 +78,7 @@ class FallingLeavesScreen extends StatefulWidget {
 class _FallingLeavesScreenState extends State<FallingLeavesScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  final List<FallingFruit> fruits = List.generate(
-    40,
-    (index) {
-      if (index < 8) return FallingBlueberry();
-      if (index < 16) return FallingStrawberry();
-      if (index < 22) return FallingBroccoli();
-      if (index < 28) return FallingCarrot();
-      if (index < 34) return FallingCucumber();
-      return FallingTomato();
-    },
-  );
+  late final List<FallingFruit> fruits;
 
   @override
   void initState() {
@@ -60,12 +87,34 @@ class _FallingLeavesScreenState extends State<FallingLeavesScreen>
       vsync: this,
       duration: const Duration(seconds: 10),
     )..repeat();
+    // Use the same random instance for all fruits
+    fruits = List.generate(
+      40,
+      (index) {
+        if (index < 8) return FallingBlueberry(globalRandom);
+        if (index < 16) return FallingStrawberry(globalRandom);
+        if (index < 22) return FallingBroccoli(globalRandom);
+        if (index < 28) return FallingCarrot(globalRandom);
+        if (index < 34) return FallingCucumber(globalRandom);
+        return FallingTomato(globalRandom);
+      },
+    );
   }
 
   @override
   void dispose() {
     _controller.dispose();
     super.dispose();
+  }
+
+  Future<void> _signInWithGoogle() async {
+    try {
+      await Supabase.instance.client.auth.signInWithOAuth(OAuthProvider.google);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Google sign-in failed: $e')),
+      );
+    }
   }
 
   @override
@@ -92,19 +141,32 @@ class _FallingLeavesScreenState extends State<FallingLeavesScreen>
                   child: Transform.rotate(
                     angle:
                         _controller.value * 2 * math.pi * fruit.rotationSpeed,
-                    child: Text(
-                      fruit.emoji,
-                      style: TextStyle(
-                        fontSize: fruit.size,
-                        color: Colors.black.withAlpha(153),
-                      ),
-                    ),
+                    child: useImages
+                        ? Image.asset(
+                            fruit.imageAsset,
+                            width: fruit.size,
+                            height: fruit.size,
+                            errorBuilder: (context, error, stackTrace) => Text(
+                              fruit.emoji,
+                              style: TextStyle(
+                                fontSize: fruit.size,
+                                color: Colors.black.withAlpha(153),
+                              ),
+                            ),
+                          )
+                        : Text(
+                            fruit.emoji,
+                            style: TextStyle(
+                              fontSize: fruit.size,
+                              color: Colors.black.withAlpha(153),
+                            ),
+                          ),
                   ),
                 );
               },
             );
-          }).toList(),
-          Container(
+          }),
+          SizedBox(
             width: double.infinity,
             child: Column(
               children: [
@@ -147,6 +209,25 @@ class _FallingLeavesScreenState extends State<FallingLeavesScreen>
                     ),
                   ),
                 ),
+                const SizedBox(height: 32),
+                ElevatedButton.icon(
+                  icon: Image.asset(
+                    'assets/google_logo.png',
+                    width: 24,
+                    height: 24,
+                  ),
+                  label: const Text('Sign in with Google'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 12),
+                    textStyle: const TextStyle(
+                        fontSize: 18, fontWeight: FontWeight.bold),
+                    elevation: 2,
+                  ),
+                  onPressed: _signInWithGoogle,
+                ),
               ],
             ),
           ),
@@ -156,32 +237,78 @@ class _FallingLeavesScreenState extends State<FallingLeavesScreen>
   }
 }
 
+class HomePage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final user = Supabase.instance.client.auth.currentUser;
+    final userName = user?.userMetadata?['name'] ?? user?.email ?? 'User';
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Home'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: 'Logout',
+            onPressed: () async {
+              await Supabase.instance.client.auth.signOut();
+            },
+          ),
+        ],
+      ),
+      body: Center(
+        child: Text(
+          'Welcome, $userName!',
+          style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+        ),
+      ),
+    );
+  }
+}
+
 class FallingBlueberry extends FallingFruit {
+  FallingBlueberry(super.random);
   @override
   String get emoji => '🫐';
+  @override
+  String get imageAsset => 'assets/fruits/blueberry.png';
 }
 
 class FallingStrawberry extends FallingFruit {
+  FallingStrawberry(super.random);
   @override
   String get emoji => '🍓';
+  @override
+  String get imageAsset => 'assets/fruits/strawberry.png';
 }
 
 class FallingBroccoli extends FallingFruit {
+  FallingBroccoli(super.random);
   @override
   String get emoji => '🥦';
+  @override
+  String get imageAsset => 'assets/fruits/broccoli.png';
 }
 
 class FallingCarrot extends FallingFruit {
+  FallingCarrot(super.random);
   @override
   String get emoji => '🥕';
+  @override
+  String get imageAsset => 'assets/fruits/carrot.png';
 }
 
 class FallingCucumber extends FallingFruit {
+  FallingCucumber(super.random);
   @override
   String get emoji => '🥒';
+  @override
+  String get imageAsset => 'assets/fruits/cucumber.png';
 }
 
 class FallingTomato extends FallingFruit {
+  FallingTomato(super.random);
   @override
   String get emoji => '🍅';
+  @override
+  String get imageAsset => 'assets/fruits/tomato.png';
 }
