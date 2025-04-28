@@ -1,14 +1,22 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter/foundation.dart';
+import 'dart:html' as html;
+
+// The redirect URI is determined by the current origin (localhost or production)
+// This ensures OAuth flow returns to the same environment where it was initiated
+final supabaseRedirectUri = kIsWeb ? Uri.base.origin : null;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
   await Supabase.initialize(
     url: 'https://daoqplvfscgawerappav.supabase.co',
     anonKey:
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRhb3FwbHZmc2NnYXdlcmFwcGF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU3MDk3MjcsImV4cCI6MjA2MTI4NTcyN30.0MFnjpcupSAmpRQCn0t3TRIIGlI5wGgl-IgZlgCJdm4',
   );
+  
   runApp(const MyApp());
 }
 
@@ -109,7 +117,18 @@ class _FallingLeavesScreenState extends State<FallingLeavesScreen>
 
   Future<void> _signInWithGoogle() async {
     try {
-      await Supabase.instance.client.auth.signInWithOAuth(OAuthProvider.google);
+      final res = await Supabase.instance.client.auth.signInWithOAuth(
+        OAuthProvider.google,
+        redirectTo: supabaseRedirectUri,  // Uses the environment-specific redirect URI
+        queryParams: {
+          'access_type': 'offline',
+          'prompt': 'consent',
+        },
+      );
+      
+      if (!res) {
+        throw Exception('Failed to initiate Google sign-in');
+      }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Google sign-in failed: $e')),
