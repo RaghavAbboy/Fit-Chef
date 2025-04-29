@@ -2,6 +2,12 @@
 
 A Flutter project for FitChef application.
 
+## Architecture Documentation
+
+Detailed documentation regarding the application's architecture, including backend schema design, can be found in the [`App Architecture and Design Documentation/`](./App%20Architecture%20and%20Design%20Documentation/) directory. See specifically:
+
+*   [`backend_design_doc.md`](./App%20Architecture%20and%20Design%20Documentation/backend_design_doc.md): Explanation of the database schema.
+
 ## Development Setup
 
 ### Prerequisites
