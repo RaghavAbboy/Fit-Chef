@@ -190,15 +190,21 @@ class _FallingLeavesScreenState extends State<FallingLeavesScreen>
                 ),
                 const SizedBox(height: 32), // Spacing
                 // Google Sign-In Button
-                ElevatedButton.icon(
-                  icon: Image.asset(
-                    AppAssets.googleLogo, // Use asset path from constants.
-                    width: 24,
-                    height: 24,
+                ElevatedButton(
+                  onPressed: _signInWithGoogle, 
+                  // NO style property here - style is fully handled by the theme
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min, 
+                    mainAxisAlignment: MainAxisAlignment.center, 
+                    children: [
+                      Image.asset(
+                        AppAssets.googleLogo, 
+                        height: 36, 
+                      ),
+                      const SizedBox(width: 12), 
+                      const Text('Sign in with Google'), 
+                    ],
                   ),
-                  label: const Text('Sign in with Google'),
-                  // Button style is automatically applied from the theme.
-                  onPressed: _signInWithGoogle, // Call the sign-in function when pressed.
                 ),
               ],
             ),

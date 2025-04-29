@@ -88,12 +88,18 @@ class AppTheme {
       ),
       // Configures the default appearance of all ElevatedButton widgets.
       elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.lightText, // Button background
-          foregroundColor: AppColors.darkText, // Button text/icon color
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          textStyle: AppTextStyles.googleButton,
-          elevation: 2,
+        style: ButtonStyle(
+          // Define properties using MaterialStateProperty to handle different states (hover, pressed, etc.)
+          backgroundColor: MaterialStateProperty.all(AppColors.lightText),
+          foregroundColor: MaterialStateProperty.all(AppColors.darkText),
+          overlayColor: MaterialStateProperty.all(Colors.transparent), // Make hover/press overlay transparent
+          padding: MaterialStateProperty.all(
+            const EdgeInsets.symmetric(horizontal: 24, vertical: 12)
+          ),
+          textStyle: MaterialStateProperty.all(AppTextStyles.googleButton),
+          elevation: MaterialStateProperty.all(2),
+          // Ensure the default shape is StadiumBorder if needed globally
+          shape: MaterialStateProperty.all(const StadiumBorder()), 
         ),
       ),
       // Defines default styles for common text types (headlines, body text, etc.).
