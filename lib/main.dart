@@ -1,20 +1,25 @@
+import 'package:cursor_fitchef/constants/app_theme.dart';
+import 'package:cursor_fitchef/widgets/auth_gate.dart';
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter/foundation.dart';
-import 'dart:html' as html;
 
 // The redirect URI is determined by the current origin (localhost or production)
 // This ensures OAuth flow returns to the same environment where it was initiated
 final supabaseRedirectUri = kIsWeb ? Uri.base.origin : null;
 
+// Constants for Supabase credentials - consider using environment variables
+const String supabaseUrl = 'https://daoqplvfscgawerappav.supabase.co';
+const String supabaseAnonKey =
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRhb3FwbHZmc2NnYXdlcmFwcGF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU3MDk3MjcsImV4cCI6MjA2MTI4NTcyN30.0MFnjpcupSAmpRQCn0t3TRIIGlI5wGgl-IgZlgCJdm4';
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   await Supabase.initialize(
-    url: 'https://daoqplvfscgawerappav.supabase.co',
-    anonKey:
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRhb3FwbHZmc2NnYXdlcmFwcGF2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDU3MDk3MjcsImV4cCI6MjA2MTI4NTcyN30.0MFnjpcupSAmpRQCn0t3TRIIGlI5wGgl-IgZlgCJdm4',
+    url: supabaseUrl,
+    anonKey: supabaseAnonKey,
   );
   
   runApp(const MyApp());
@@ -27,7 +32,8 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: AuthGate(),
+      theme: AppTheme.lightTheme,
+      home: const AuthGate(), // Use const
     );
   }
 }
