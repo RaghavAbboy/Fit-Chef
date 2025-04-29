@@ -1,20 +1,31 @@
+// --- Purpose of this File ---
+// This file centralizes the look and feel (theme) and asset paths for the app.
+// Using constants here makes it easy to change colors, fonts, or image locations
+// consistently across the entire application.
+
 import 'package:flutter/material.dart';
 
-// Define color constants
+// --- Color Definitions ---
+// Defines all the specific colors used in the application.
+// Using named constants (like `primaryGreen`) makes the code more readable
+// than using raw color codes (like `Color(0xFF1B5E20)`) everywhere.
 class AppColors {
   static const Color primaryGreen = Color(0xFF1B5E20);
   static const Color secondaryGreen = Color(0xFF2E7D32);
   static const Color lightText = Colors.white;
   static const Color darkText = Colors.black;
   static const Color subtleShadow = Colors.white70;
-  static const Color fruitText = Color(0x99000000); // black.withAlpha(153)
+  static const Color fruitText = Color(0x99000000); // Represents black with 60% opacity
 }
 
-// Define text style constants
+// --- Text Style Definitions ---
+// Defines reusable text styles for different parts of the UI (titles, buttons, etc.).
+// This ensures text looks consistent and makes it easy to update styles globally.
 class AppTextStyles {
+  // Style for the main app title ("Fit Chef") on the login screen.
   static const TextStyle title = TextStyle(
     fontSize: 64,
-    fontFamily: 'Pacifico',
+    fontFamily: 'Pacifico', // Custom font defined in pubspec.yaml
     fontWeight: FontWeight.w900,
     color: AppColors.primaryGreen,
     letterSpacing: 2,
@@ -27,9 +38,10 @@ class AppTextStyles {
     ],
   );
 
+  // Style for the slogan text below the title on the login screen.
   static const TextStyle slogan = TextStyle(
     fontSize: 18,
-    fontFamily: 'Quicksand',
+    fontFamily: 'Quicksand', // Custom font defined in pubspec.yaml
     fontWeight: FontWeight.w800,
     color: AppColors.secondaryGreen,
     letterSpacing: 1,
@@ -42,40 +54,52 @@ class AppTextStyles {
     ],
   );
 
+  // Style specifically for the Google Sign-In button text.
   static const TextStyle googleButton = TextStyle(
     fontSize: 18, 
     fontWeight: FontWeight.bold,
-    color: AppColors.darkText, // Ensure foreground color is set in ButtonStyle
+    color: AppColors.darkText, // Actual text color is set via ButtonStyle foregroundColor
   );
 
+  // Style for the welcome message on the home page.
   static const TextStyle welcomeMessage = TextStyle(
     fontSize: 28, 
     fontWeight: FontWeight.bold
   );
 }
 
-// Define the main theme
+// --- Main Application Theme ---
+// Defines the overall visual theme for the application using the colors
+// and text styles defined above.
 class AppTheme {
+  // `lightTheme` provides the configuration for the app's appearance.
   static ThemeData get lightTheme {
     return ThemeData(
+      // Sets the base color scheme (affects various widget colors).
       primarySwatch: Colors.green,
+      // Sets the default background color for screens (`Scaffold` widgets).
       scaffoldBackgroundColor: AppColors.lightText,
-      fontFamily: 'Quicksand', // Default font
+      // Sets the default font family unless overridden by a specific TextStyle.
+      fontFamily: 'Quicksand',
+      // Configures the appearance of the top AppBar.
       appBarTheme: const AppBarTheme(
         backgroundColor: AppColors.primaryGreen,
-        foregroundColor: AppColors.lightText, // Title and icons color
+        foregroundColor: AppColors.lightText, // Color for title and icons in AppBar
       ),
+      // Configures the default appearance of all ElevatedButton widgets.
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.lightText,
-          foregroundColor: AppColors.darkText,
+          backgroundColor: AppColors.lightText, // Button background
+          foregroundColor: AppColors.darkText, // Button text/icon color
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           textStyle: AppTextStyles.googleButton,
           elevation: 2,
         ),
       ),
+      // Defines default styles for common text types (headlines, body text, etc.).
+      // Widgets like `Text` can automatically use these based on context,
+      // or you can reference them explicitly like `Theme.of(context).textTheme.headlineLarge`.
       textTheme: const TextTheme(
-        // You can define more specific text themes here if needed
         headlineLarge: AppTextStyles.title, 
         bodyLarge: AppTextStyles.slogan,
         headlineMedium: AppTextStyles.welcomeMessage,
@@ -84,7 +108,9 @@ class AppTheme {
   }
 }
 
-// Constants for asset paths
+// --- Asset Path Definitions ---
+// Defines constants for the paths to image assets used in the app.
+// This prevents typos and makes it easy to manage asset locations.
 class AppAssets {
   static const String googleLogo = 'assets/google_logo.png';
   static const String blueberry = 'assets/fruits/blueberry.png';
