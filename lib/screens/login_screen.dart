@@ -209,6 +209,46 @@ class _FallingLeavesScreenState extends State<FallingLeavesScreen>
               ],
             ),
           ),
+          // Layer 4: Designer Credit Text at the bottom
+          Align(
+            alignment: Alignment.bottomCenter,
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 30.0), // Increased bottom padding to move it up
+              child: Column(
+                mainAxisSize: MainAxisSize.min, // Column takes minimum vertical space
+                children: [
+                  // Combine "Designed with", heart icon into a Row
+                  Row(
+                    mainAxisSize: MainAxisSize.min, // Row takes minimum horizontal space
+                    children: [
+                      Text(
+                        'Designed with ',
+                        style: textTheme.bodyLarge?.copyWith( // Use slogan style (Quicksand)
+                          fontSize: 12, // Made smaller
+                          color: AppColors.secondaryGreen, // Use slogan color
+                          shadows: [], // Remove shadow
+                        ), 
+                      ),
+                      Icon(
+                        Icons.favorite, // Heart icon
+                        color: AppColors.secondaryGreen, // Same green color
+                        size: 12, // Match font size
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 3), // Slightly reduced space
+                  Text(
+                    'Raghav Abboy',
+                    style: textTheme.headlineLarge?.copyWith( // Use title style (Pacifico)
+                      fontSize: 16, // Made smaller
+                      color: AppColors.primaryGreen.withOpacity(0.8), // Added transparency
+                      shadows: [], // Remove shadow
+                    ), 
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
