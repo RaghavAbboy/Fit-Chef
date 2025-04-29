@@ -76,7 +76,7 @@ flutter devices
 
 This project provides several scripts to automate common tasks. Make sure each script is executable:
 ```bash
-chmod +x setup.sh git_push.sh git_pull.sh run_app.sh
+chmod +x setup.sh git_push.sh git_pull.sh run_app.sh deploy.sh
 ```
 
 | Script           | Purpose                                                                                 | Usage Example                                  |
@@ -86,6 +86,7 @@ chmod +x setup.sh git_push.sh git_pull.sh run_app.sh
 | `git_pull.sh`    | Stashes changes, pulls latest from git, restores changes.                               | `./git_pull.sh`                                |
 | `run_app.sh`     | Runs the Flutter app in iOS, Android, or Web mode based on the argument provided.       | `./run_app.sh ios`<br>`./run_app.sh android <android_device_id>`<br>`./run_app.sh web` |
 | `run_and_log.sh` | Runs any command, logs its output to last_command_output.txt, and prints the output.    | `./run_and_log.sh ls -la`                      |
+| `deploy.sh`      | Triggers a manual deployment to AWS Amplify for the main branch.                        | `./deploy.sh`                                  |
 
 **Details:**
 - `setup.sh`: Ensures your environment is ready for development (Flutter, CocoaPods, dependencies, clean build).
@@ -141,3 +142,22 @@ If you encounter any issues:
 
 - Animated falling fruits and vegetables on the landing page
 - Sign in with Google is currently supported on the web version of the app
+
+## Deployment
+
+### AWS Amplify Deployment
+The project is configured for manual deployments to AWS Amplify. To deploy:
+
+1. Make sure your changes are pushed to GitHub:
+   ```bash
+   ./git_push.sh "your commit message"
+   ```
+
+2. Deploy to AWS Amplify:
+   ```bash
+   ./deploy.sh
+   ```
+
+The deploy script will trigger a build on AWS Amplify for the main branch. You can monitor the build status in the AWS Amplify Console.
+
+**Note:** Auto-build is disabled to give you control over when to deploy changes. Each deployment will build and deploy the latest commit from the specified branch.
