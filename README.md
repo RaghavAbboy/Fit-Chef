@@ -12,6 +12,47 @@ A Flutter project for FitChef application.
    ```bash
    sudo gem install cocoapods
    ```
+5. Install [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html):
+   ```bash
+   # For macOS
+   curl "https://awscli.amazonaws.com/AWSCLIV2.pkg" -o "AWSCLIV2.pkg"
+   sudo installer -pkg AWSCLIV2.pkg -target /
+   
+   # Verify installation
+   aws --version
+   ```
+
+### AWS Amplify Setup
+1. Configure AWS CLI with your credentials:
+   ```bash
+   aws configure
+   ```
+   You'll need to provide:
+   - AWS Access Key ID
+   - AWS Secret Access Key
+   - Default region (use the region where your Amplify app is deployed)
+   - Default output format (enter 'json')
+
+   To get your AWS credentials:
+   1. Go to [AWS IAM Console](https://console.aws.amazon.com/iam)
+   2. Click on "Users" in the left sidebar
+   3. Click "Create user" or select your user
+   4. Under "Security credentials", create an access key
+   5. Save the Access Key ID and Secret Access Key
+
+2. Ensure the user has required permissions:
+   - Go to the IAM Console
+   - Select your user
+   - Click "Add permissions"
+   - Search for and attach "AdministratorAccess-Amplify"
+
+3. Verify Amplify CLI setup:
+   ```bash
+   # Test AWS CLI configuration
+   aws amplify list-apps
+   
+   # This should show your Amplify apps, including Fit-Chef
+   ```
 
 ### Getting Started
 
@@ -148,6 +189,10 @@ If you encounter any issues:
 ### AWS Amplify Deployment
 The project is configured for manual deployments to AWS Amplify. To deploy:
 
+0. Prerequisites:
+   - Complete the [AWS Amplify Setup](#aws-amplify-setup) section above
+   - Ensure you have the necessary AWS credentials and permissions
+
 1. Make sure your changes are pushed to GitHub:
    ```bash
    ./git_push.sh "your commit message"
@@ -161,3 +206,9 @@ The project is configured for manual deployments to AWS Amplify. To deploy:
 The deploy script will trigger a build on AWS Amplify for the main branch. You can monitor the build status in the AWS Amplify Console.
 
 **Note:** Auto-build is disabled to give you control over when to deploy changes. Each deployment will build and deploy the latest commit from the specified branch.
+
+**Troubleshooting Deployments:**
+- If you get permissions errors, verify your AWS credentials with `aws configure list`
+- If you get "command not found: aws", reinstall the AWS CLI
+- If the deployment fails, check the build logs in the AWS Amplify Console
+- Ensure your IAM user has the "AdministratorAccess-Amplify" policy attached
