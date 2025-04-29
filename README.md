@@ -12,7 +12,8 @@ A Flutter project for FitChef application.
    ```bash
    sudo gem install cocoapods
    ```
-5. Install [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html):
+5. Install [Node.js and npm](https://nodejs.org/) (needed for the Supabase MCP Server)
+6. Install [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html):
    ```bash
    # For macOS
    curl "https://awscli.amazonaws.com/AWSCLIV2.pkg" -o "AWSCLIV2.pkg"
@@ -21,6 +22,24 @@ A Flutter project for FitChef application.
    # Verify installation
    aws --version
    ```
+7. **(Cursor Users Only)** Setup Supabase MCP Server for Supabase Tools:
+   - Obtain a Supabase Access Token:
+     1. Go to your [Supabase Account Tokens](https://app.supabase.com/account/tokens).
+     2. Click "Generate New Token".
+     3. Give it a descriptive name (e.g., "Cursor MCP Token").
+     4. Click "Generate Token" and **copy the token immediately** (it won't be shown again).
+   - In Cursor, go to `File > Preferences > Settings`, search for "MCP", and click "Edit settings.json" under "Model Context Protocol: Servers".
+   - Add a new server configuration like this, replacing `YOUR_SUPABASE_ACCESS_TOKEN` with the token you just copied:
+     ```json
+     {
+       "supabase": {
+         "command": "npx -y @supabase/mcp-server-supabase@latest --access-token YOUR_SUPABASE_ACCESS_TOKEN",
+         "enabled": true
+       }
+     }
+     ```
+   - Save the `settings.json` file.
+   - You may need to restart the server process or Cursor if the Supabase tools don't appear immediately.
 
 ### AWS Amplify Setup
 1. Configure AWS CLI with your credentials:

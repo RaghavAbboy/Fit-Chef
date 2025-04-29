@@ -1,6 +1,7 @@
 // --- Imports ---
 // Import necessary libraries: theme constants, Flutter UI elements, and Supabase for auth.
 import 'package:cursor_fitchef/constants/app_theme.dart';
+import 'package:cursor_fitchef/screens/daily_routine_screen.dart'; // Import the new screen
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -59,12 +60,38 @@ class HomePage extends StatelessWidget {
         ],
       ),
       // `body` is the main content area of the screen.
-      body: Center( // Centers its child widget.
-        // Displays the welcome message.
-        child: Text(
-          'Welcome, $userName!', // Shows the fetched user name.
-          // Apply the `welcomeMessage` style defined in `app_theme.dart`.
-          style: textTheme.headlineMedium,
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Welcome message
+              Text(
+                'Welcome, $userName!',
+                style: textTheme.headlineMedium,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 40), // Spacing
+              // Button to navigate to Daily Routine Screen
+              ElevatedButton.icon(
+                icon: const Icon(Icons.checklist_rtl_outlined), // Example icon
+                label: const Text('My Daily Routine'), // Renamed button text
+                onPressed: () {
+                  // Navigate to the DailyRoutineScreen
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const DailyRoutineScreen()),
+                  );
+                },
+                // Use theme style, potentially add minimum size
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(200, 50), // Example size
+                ),
+              ),
+              // Add more buttons or content here later
+            ],
+          ),
         ),
       ),
     );
