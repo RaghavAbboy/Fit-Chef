@@ -67,7 +67,7 @@ The database uses several tables to store this information. The main ones are in
 *   **Key Columns:**
     *   `id` (UUID): Unique identifier for this macro goal set.
     *   `user_id` (UUID): Links to `auth.users`. **Unique constraint** ensures a user has only one macro goal record.
-    *   `daily_calorie_budget` (Integer): The user's target daily calorie intake (default 2000, constrained 100-10000).
+    *   `daily_calorie_budget` (Integer): The user's target daily calorie intake (default 2000, constrained 500-10000).
     *   `created_at`, `updated_at` (Timestamp with Time Zone): Timestamps for record creation and last modification.
 *   **Relationships:** Linked one-to-one to `auth.users`. Referenced by `health_goals`.
 *   **Security:** Row Level Security (RLS) is **enabled**. Users can only manage their own macro goals.
@@ -118,4 +118,4 @@ The database uses several tables to store this information. The main ones are in
 *   A user has one `macro_goals` entry (via `health_goals`).
 *   A user can log many `calorie_activity` entries.
 
-This structure allows the app to efficiently manage user-defined routines and track their completion on a daily basis while ensuring users can only see and modify their own data. 
+This structure allows the app to efficiently manage user-defined routines and track their completion on a daily basis while ensuring users can only see and modify their own data.

@@ -217,6 +217,7 @@ If you encounter any issues:
     - Track consumed calories for the day.
     - Log food intake (calories and optional description), which reduces the remaining daily budget.
     - Quickly add or subtract calories using +/- buttons for manual adjustments.
+    - **Customize daily calorie budget** with an intuitive edit interface.
 - My Daily Routine (Details TBD)
 
 ## Deployment
