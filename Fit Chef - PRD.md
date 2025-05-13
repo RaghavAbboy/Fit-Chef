@@ -23,8 +23,15 @@ FitChef is a cross-platform application designed to [**Inferred Goal:** likely a
     *   Google Sign-In (Currently supported on Web).
     *   Leverages Supabase for authentication services.
 *   **Landing Page:** Features an animated display of falling fruits and vegetables.
-*   **Backend Integration:** Utilizes Supabase for database and backend functionalities (schema defined in `App Architecture and Design Documentation/backend_design_doc.md`).
+*   **Calorie Hub:**
+    *   Displays user's daily calorie budget.
+    *   Calculates and displays calories consumed (reducing the budget) and remaining calories.
+    *   Provides visual feedback (colors, messages) for calorie deficit/surplus.
+    *   **Food Logging:** Allows users to log food intake (calories and optional description). Logged food uses an `operation: 'decrease'` in the `calorie_activity` table, signifying it reduces the available daily budget. The `activity` type is `'food_intake'`.
+    *   **Quick Adjustments:** Provides "+" and "-" buttons for users to make manual calorie adjustments. These use an `operation: 'increase'` (adds to budget) or `'decrease'` (subtracts from budget) respectively, with an `activity` type of `'manual_adjustment'`.
+*   **Backend Integration:** Utilizes Supabase for database and backend functionalities (schema defined in `App Architecture and Design Documentation/backend_design_doc.md`), including tables for `macro_goals` (daily budget) and `calorie_activity` (logged entries with `operation` and `activity` types).
 *   **Deployment:** Manually deployed to AWS Amplify (details in `README.md`).
+*   **My Daily Routine:** (Functionality TBD)
 *   **[Inferred Core Features]:** Based on the name "FitChef" and the existence of a backend schema, the app likely includes core features related to:
     *   Recipe browsing/management
     *   Meal planning

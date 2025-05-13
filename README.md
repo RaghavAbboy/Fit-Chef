@@ -211,7 +211,13 @@ If you encounter any issues:
 ## Features
 
 - Animated falling fruits and vegetables on the landing page
-- Sign in with Google is currently supported on the web version of the app
+- User authentication (Google Sign-In on Web)
+- **Calorie Hub:**
+    - View daily calorie budget and remaining calories.
+    - Track consumed calories for the day.
+    - Log food intake (calories and optional description), which reduces the remaining daily budget.
+    - Quickly add or subtract calories using +/- buttons for manual adjustments.
+- My Daily Routine (Details TBD)
 
 ## Deployment
 

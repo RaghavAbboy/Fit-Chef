@@ -2,6 +2,7 @@
 // Import necessary libraries: theme constants, Flutter UI elements, and Supabase for auth.
 import 'package:cursor_fitchef/constants/app_theme.dart';
 import 'package:cursor_fitchef/screens/daily_routine_screen.dart'; // Import the new screen
+import 'package:cursor_fitchef/screens/calorie_hub_screen.dart'; // Import the new screen
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -75,21 +76,35 @@ class HomePage extends StatelessWidget {
               const SizedBox(height: 40), // Spacing
               // Button to navigate to Daily Routine Screen
               ElevatedButton.icon(
-                icon: const Icon(Icons.checklist_rtl_outlined), // Example icon
-                label: const Text('My Daily Routine'), // Renamed button text
                 onPressed: () {
-                  // Navigate to the DailyRoutineScreen
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => const DailyRoutineScreen()),
                   );
                 },
-                // Use theme style, potentially add minimum size
+                icon: const Icon(Icons.fitness_center), // Example icon
+                label: const Text('My Daily Routine'), // Renamed button text
                 style: ElevatedButton.styleFrom(
-                  minimumSize: const Size(200, 50), // Example size
+                  padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                  textStyle: const TextStyle(fontSize: 18),
                 ),
               ),
-              // Add more buttons or content here later
+              const SizedBox(height: 20), // Spacing between buttons
+              ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const CalorieHubScreen()),
+                  );
+                },
+                icon: const Icon(Icons.track_changes), // Example icon for Calorie Hub
+                label: const Text('Calorie Hub'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                  textStyle: const TextStyle(fontSize: 18),
+                ),
+              ),
+              const SizedBox(height: 20), // Added spacing after the new button
             ],
           ),
         ),
