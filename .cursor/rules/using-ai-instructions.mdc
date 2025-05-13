@@ -1,0 +1,6 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+Before you execute on any prompt, read `project_ai_instructions.md` for additional context

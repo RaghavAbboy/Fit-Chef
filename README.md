@@ -47,6 +47,10 @@ Detailed documentation regarding the application's architecture, including backe
    - Save the `settings.json` file.
    - You may need to restart the server process or Cursor if the Supabase tools don't appear immediately.
 
+8. **Cursor Rules**
+   To your Project Rules, add:
+   "Before you execute on any prompt, read `project_ai_instructions.md` for additional context"
+
 ### AWS Amplify Setup
 1. Configure AWS CLI with your credentials:
    ```bash
