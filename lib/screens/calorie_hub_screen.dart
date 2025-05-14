@@ -13,6 +13,14 @@ class CalorieHubScreen extends StatefulWidget {
 class _CalorieHubScreenState extends State<CalorieHubScreen> {
   static const int _defaultDailyBudget = 2000;
 
+  // Constants for calorie validation ranges
+  static const int _minFoodLogCalories = 1;
+  static const int _maxFoodLogCalories = 10000;
+  static const int _minQuickAdjustCalories = 1;
+  static const int _maxQuickAdjustCalories = 10000;
+  static const int _minBudgetCalories = 500;
+  static const int _maxBudgetCalories = 10000;
+
   int? _dailyBudget;
   int _consumedToday = 0; // Default to 0
   int? _remainingCalories;
@@ -34,13 +42,20 @@ class _CalorieHubScreenState extends State<CalorieHubScreen> {
   final _editBudgetFormKey = GlobalKey<FormState>();
   late TextEditingController _editBudgetController;
 
+  // For Log Exercise Dialog
+  final _logExerciseFormKey = GlobalKey<FormState>();
+  late TextEditingController _exerciseCaloriesController;
+  late TextEditingController _exerciseDescriptionController;
+
   @override
   void initState() {
     super.initState();
     _caloriesController = TextEditingController();
     _descriptionController = TextEditingController();
-    _quickAdjustCaloriesController = TextEditingController(); // Initialize new controller
-    _editBudgetController = TextEditingController(); // Initialize budget controller
+    _quickAdjustCaloriesController = TextEditingController();
+    _editBudgetController = TextEditingController();
+    _exerciseCaloriesController = TextEditingController();
+    _exerciseDescriptionController = TextEditingController();
     _fetchCalorieData();
   }
 
@@ -48,13 +63,24 @@ class _CalorieHubScreenState extends State<CalorieHubScreen> {
   void dispose() {
     _caloriesController.dispose();
     _descriptionController.dispose();
-    _quickAdjustCaloriesController.dispose(); // Dispose new controller
-    _editBudgetController.dispose(); // Dispose budget controller
+    _quickAdjustCaloriesController.dispose();
+    _editBudgetController.dispose();
+    _exerciseCaloriesController.dispose();
+    _exerciseDescriptionController.dispose();
     super.dispose();
   }
 
   Future<void> _fetchCalorieData() async {
     if (!mounted) return;
+
+    // Use local variables to hold calculation results before committing to state.
+    int? newDailyBudget;
+    int newSumDecreaseCalories = 0;
+    int newSumIncreaseCalories = 0;
+    int? newRemainingCaloriesCalculation;
+    String? errorLoadingMessage; // Local variable for error message
+
+    // Initial setState to show loading and clear previous error message from UI.
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -71,20 +97,11 @@ class _CalorieHubScreenState extends State<CalorieHubScreen> {
           .from('macro_goals')
           .select('daily_calorie_budget')
           .eq('user_id', userId)
-          .maybeSingle(); // Use maybeSingle to handle potential null
+          .maybeSingle();
 
-      if (budgetResponse == null) {
-        // This case should ideally not happen due to the trigger,
-        // but handle it defensively.
-        print('Warning: No macro_goals found for user $userId. Using default budget $_defaultDailyBudget.');
-        _dailyBudget = _defaultDailyBudget; // Fallback default
-      } else {
-         _dailyBudget = budgetResponse['daily_calorie_budget'] as int? ?? _defaultDailyBudget; // Use default if null
-      }
-      // Update the controller when budget is fetched
-      _editBudgetController.text = _dailyBudget?.toString() ?? _defaultDailyBudget.toString();
+      newDailyBudget = budgetResponse?['daily_calorie_budget'] as int? ?? _defaultDailyBudget;
 
-      // 2. Fetch Today's Calorie Activities
+      // 2. Fetch Today\'s Calorie Activities
       final now = DateTime.now();
       final startOfDay = DateTime(now.year, now.month, now.day).toIso8601String();
       final endOfDay = DateTime(now.year, now.month, now.day, 23, 59, 59, 999).toIso8601String();
@@ -96,32 +113,37 @@ class _CalorieHubScreenState extends State<CalorieHubScreen> {
           .gte('activity_timestamp', startOfDay)
           .lte('activity_timestamp', endOfDay);
 
-      // 3. Calculate Consumed Calories
-      int consumed = 0;
       for (var activity in activityResponse as List) {
         final calories = activity['calories'] as int? ?? 0;
         final operation = activity['operation'] as String?;
-        if (operation == 'decrease') { // Food intake, manual subtractions from budget
-            consumed += calories;
-        } else if (operation == 'increase') { // Manual additions to budget (e.g., exercise credit)
-            consumed -= calories; // Effectively adds back to remaining by reducing what's considered "consumed" from budget
+        if (operation == 'decrease') {
+            newSumDecreaseCalories += calories;
+        } else if (operation == 'increase') {
+            newSumIncreaseCalories += calories;
         }
       }
-      _consumedToday = consumed;
-
-      // 4. Calculate Remaining Calories
-      _remainingCalories = (_dailyBudget ?? 0) - _consumedToday;
+      
+      // Calculate remaining calories using the fetched and calculated local values
+      newRemainingCaloriesCalculation = (newDailyBudget ?? _defaultDailyBudget) - newSumDecreaseCalories + newSumIncreaseCalories;
 
     } catch (e) {
-       print('Error fetching calorie data: $e');
-      if (mounted) {
-        setState(() {
-          _errorMessage = 'Failed to load calorie data: ${e.toString()}';
-        });
-      }
+       errorLoadingMessage = 'Failed to load calorie data: ${e.toString()}';
     } finally {
       if (mounted) {
         setState(() {
+          if (errorLoadingMessage != null) {
+            _errorMessage = errorLoadingMessage;
+            // When an error occurs, we might not want to update calorie values,
+            // or reset them to a default/null state. For now, we only set the error message.
+            // The calorie values displayed will be from the last successful fetch or initial state.
+          } else {
+            // No error, so commit all fetched/calculated values to the state.
+            _dailyBudget = newDailyBudget;
+            _editBudgetController.text = newDailyBudget?.toString() ?? _defaultDailyBudget.toString(); // Update controller text here
+            _consumedToday = newSumDecreaseCalories;
+            _remainingCalories = newRemainingCaloriesCalculation;
+            _errorMessage = null; // Clear any previous error message if successful
+          }
           _isLoading = false;
         });
       }
@@ -209,8 +231,8 @@ class _CalorieHubScreenState extends State<CalorieHubScreen> {
                                   if (_remainingCalories != null)
                                     Text(
                                       _remainingCalories! >= 0
-                                          ? "You're currently in a Calorie Deficit for the day"
-                                          : "You're currently in a Calorie Surplus for the day",
+                                          ? "You\'re currently in a Calorie Deficit for the day"
+                                          : "You\'re currently in a Calorie Surplus for the day",
                                       style: TextStyle(
                                         fontStyle: FontStyle.italic,
                                         color: Colors.grey.shade700,
@@ -222,9 +244,13 @@ class _CalorieHubScreenState extends State<CalorieHubScreen> {
                                     onPressed: _showLogFoodDialog,
                                     icon: const Icon(Icons.fastfood_outlined),
                                     label: const Text('Log Food Intake'),
-                                    style: ElevatedButton.styleFrom(),
                                   ),
-                                  // Removed Spacer and bottom content from here
+                                  const SizedBox(height: 12),
+                                  ElevatedButton.icon(
+                                    onPressed: _showLogExerciseDialog,
+                                    icon: const Icon(Icons.fitness_center_outlined),
+                                    label: const Text('Log Exercise'),
+                                  ),
                                 ],
                               ),
                   ),
@@ -235,121 +261,115 @@ class _CalorieHubScreenState extends State<CalorieHubScreen> {
           // --- Bottom-anchored content ---
           Padding(
             padding: const EdgeInsets.fromLTRB(16.0, 8.0, 16.0, 80.0), // User adjusted bottom padding
-            child: Center( // Center the Table horizontally
-              child: Table(
-                columnWidths: const <int, TableColumnWidth>{
-                  0: IntrinsicColumnWidth(),     // For labels
-                  1: IntrinsicColumnWidth(),     // For values (colon + number + kcal) - make intrinsic to prevent too much flex
-                  2: IntrinsicColumnWidth(),     // For the icon / placeholder
-                },
-                defaultVerticalAlignment: TableCellVerticalAlignment.middle,
-                children: <TableRow>[
-                  // Row 1: Consumed (Moved to the top)
-                  TableRow(
-                    children: <Widget>[
-                      // Label
-                      Padding(
-                        padding: const EdgeInsets.only(right: 4.0), // Reduced space after label
-                        child: Text(
-                          'Calories Consumed Today',
-                          style: Theme.of(context).textTheme.titleMedium,
-                          textAlign: TextAlign.right, // Right-align the label
-                        ),
+            child: Column( // Changed from Center(child: Table(...)) to Column
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center, // Center children horizontally
+              children: [
+                // Row 1: Consumed (Now a simple Text.rich, centered)
+                Text.rich(
+                  TextSpan(
+                    style: Theme.of(context).textTheme.titleMedium,
+                    children: <TextSpan>[
+                      TextSpan(text: 'Calories Consumed Today: '),
+                      TextSpan(
+                        text: '$_consumedToday kcal',
+                        style: TextStyle(fontWeight: FontWeight.bold),
                       ),
-                      // Value
-                      Text.rich(
-                        TextSpan(
-                          style: Theme.of(context).textTheme.titleMedium,
-                          children: <TextSpan>[
-                            TextSpan(text: ': '),
-                            TextSpan(
-                              text: '$_consumedToday',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            TextSpan(
-                              text: ' kcal',
-                              style: TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                          ],
-                        ),
-                        textAlign: TextAlign.left, // Explicitly left-align value part
-                      ),
-                      // Placeholder for Icon to ensure alignment with the (now below) budget row's icon
-                      SizedBox(width: 46), 
                     ],
                   ),
-                  // Spacer Row - for vertical spacing
-                  TableRow(children: [SizedBox(height: 8), SizedBox(height: 8), SizedBox(height: 8)]),
-                  // Row 2: Budget (Moved to the bottom, keeps the icon)
-                  TableRow(
-                    children: <Widget>[
-                      // Label
-                      Padding(
-                        padding: const EdgeInsets.only(right: 4.0),
-                        child: Text(
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12.0), // Spacing between consumed and budget box
+
+                // Row 2: Budget (New styled box)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 22.0), // Added padding to make the box narrower
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade50, // Very light green background
+                      borderRadius: BorderRadius.circular(12.0),
+                      // border: Border.all( // Border removed
+                      //   color: Theme.of(context).colorScheme.outline.withOpacity(0.5),
+                      //   width: 1.0,
+                      // ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          spreadRadius: 1,
+                          blurRadius: 3,
+                          offset: Offset(0, 2),
+                        )
+                      ]
+                    ),
+                    child: Column( // Changed from Stack to Column for simpler top-to-bottom layout
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Text(
                           'My Daily Calorie Budget',
                           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                 fontSize: (Theme.of(context).textTheme.titleMedium?.fontSize ?? 16) + 2,
                               ),
-                          textAlign: TextAlign.right, // Right-align the label
+                          textAlign: TextAlign.center,
                         ),
-                      ),
-                      // Value (colon + number + kcal)
-                      Text.rich(
-                        TextSpan(
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontSize: (Theme.of(context).textTheme.titleMedium?.fontSize ?? 16) + 2,
+                        const SizedBox(height: 4.0),
+                        Row(
+                          mainAxisSize: MainAxisSize.min, // Let this Row be as wide as its children
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Text.rich(
+                              TextSpan(
+                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                  fontSize: (Theme.of(context).textTheme.titleMedium?.fontSize ?? 16) + 2,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                children: <TextSpan>[
+                                  TextSpan(
+                                    text: '${_dailyBudget != null ? _dailyBudget! : "N/A"}',
+                                  ),
+                                  TextSpan(
+                                    text: ' kcal',
+                                  ),
+                                ],
                               ),
-                          children: <TextSpan>[
-                            TextSpan(text: ': '),
-                            TextSpan(
-                              text: '${_dailyBudget != null ? _dailyBudget! : "N/A"}',
-                              style: TextStyle(fontWeight: FontWeight.bold), //fontSize will be inherited
                             ),
-                            TextSpan(
-                              text: ' kcal',
-                              style: TextStyle(fontWeight: FontWeight.bold), //fontSize will be inherited
+                            const SizedBox(width: 8.0), // Spacing
+                            Container( // Existing styled container for the icon
+                              padding: const EdgeInsets.all(4.0),
+                              decoration: BoxDecoration(
+                                color: Theme.of(context).cardColor,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.grey.shade300,
+                                  width: 0.5,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.2),
+                                    spreadRadius: 1,
+                                    blurRadius: 3,
+                                    offset: Offset(0, 1),
+                                  ),
+                                ],
+                              ),
+                              child: IconButton(
+                                icon: const Icon(Icons.edit_outlined, size: 16),
+                                onPressed: _showEditBudgetDialog,
+                                tooltip: 'Edit Daily Budget',
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
+                                splashRadius: 18,
+                                visualDensity: VisualDensity.compact,
+                              ),
                             ),
                           ],
                         ),
-                        textAlign: TextAlign.left, // Explicitly left-align value part
-                      ),
-                      // Icon
-                      Padding(
-                        padding: const EdgeInsets.only(left: 8.0), // Increased space before icon for balance
-                        child: Container( // Existing styled container for the icon
-                          padding: const EdgeInsets.all(4.0),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).cardColor,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Colors.grey.shade300,
-                              width: 0.5,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.2),
-                                spreadRadius: 1,
-                                blurRadius: 3,
-                                offset: Offset(0, 1),
-                              ),
-                            ],
-                          ),
-                          child: IconButton(
-                            icon: const Icon(Icons.edit_outlined, size: 16),
-                            onPressed: _showEditBudgetDialog,
-                            tooltip: 'Edit Daily Budget',
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
-                            splashRadius: 18,
-                            visualDensity: VisualDensity.compact,
-                          ),
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ],
@@ -399,7 +419,7 @@ class _CalorieHubScreenState extends State<CalorieHubScreen> {
                     keyboardType: TextInputType.number,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     validator: (value) {
-                      return _validateCalorieInput(value, min: 1, max: 10000, fieldName: 'Calories');
+                      return _validateCalorieInput(value, min: _minFoodLogCalories, max: _maxFoodLogCalories, fieldName: 'Calories');
                     },
                   ),
                   const SizedBox(height: 16),
@@ -437,46 +457,65 @@ class _CalorieHubScreenState extends State<CalorieHubScreen> {
   }
 
   Future<void> _submitFoodLogForm(BuildContext dialogContext) async {
-    if (_foodLogFormKey.currentState?.validate() ?? false) {
-      final userId = _supabase.auth.currentUser?.id;
-      if (userId == null) {
+    if (!(_foodLogFormKey.currentState?.validate() ?? false)) {
+      return;
+    }
+
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Error: User not logged in.'), backgroundColor: Colors.red),
         );
-        return;
+      }
+      return;
+    }
+
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+      });
+    }
+
+    try {
+      final foodItem = _descriptionController.text;
+      final caloriesValue = int.parse(_caloriesController.text);
+
+      await _supabase.from('calorie_activity').insert({
+        'user_id': userId,
+        'activity': 'food_intake',
+        'description': foodItem,
+        'calories': caloriesValue,
+        'operation': 'decrease'
+      });
+
+      if (Navigator.of(dialogContext).canPop()) {
+        Navigator.of(dialogContext).pop();
       }
 
-      try {
-        final calories = int.parse(_caloriesController.text);
-        final description = _descriptionController.text;
+      await _fetchCalorieData();
 
-        await _supabase.from('calorie_activity').insert({
-          'user_id': userId,
-          'calories': calories,
-          'description': description.isNotEmpty ? description : null, // Store null if empty
-          'activity': 'food_intake', // Corrected ENUM value for food logging
-          'operation': 'decrease',  // Food intake DECREASES remaining budget
-          'activity_timestamp': DateTime.now().toIso8601String(),
-        });
-
-        // ignore: use_build_context_synchronously
-        if (!Navigator.of(dialogContext).canPop()) return; // Check if dialog is still mounted
-        Navigator.of(dialogContext).pop(); // Dismiss dialog
-        
-        // Refresh the main screen data
-        _fetchCalorieData(); 
-
-        // ignore: use_build_context_synchronously
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Food logged successfully!'), backgroundColor: Colors.green),
+      if (mounted) {
+        scaffoldMessenger.showSnackBar(
+          SnackBar(content: Text('Food logged successfully!'), backgroundColor: Colors.green),
         );
-
-      } catch (e) {
-        print('Error logging food: $e');
-        // ignore: use_build_context_synchronously
-        ScaffoldMessenger.of(context).showSnackBar(
+      }
+    } catch (e) {
+      if (mounted) {
+        if (Navigator.of(dialogContext).canPop()) { // Ensure dialog is dismissed on error too
+            Navigator.of(dialogContext).pop();
+        }
+        scaffoldMessenger.showSnackBar(
           SnackBar(content: Text('Failed to log food: ${e.toString()}'), backgroundColor: Colors.red),
         );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
       }
     }
   }
@@ -507,7 +546,7 @@ class _CalorieHubScreenState extends State<CalorieHubScreen> {
                     keyboardType: TextInputType.number,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     validator: (value) {
-                      return _validateCalorieInput(value, min: 1, max: 10000, fieldName: 'Calories');
+                      return _validateCalorieInput(value, min: _minQuickAdjustCalories, max: _maxQuickAdjustCalories, fieldName: 'Calories');
                     },
                   ),
                 ],
@@ -537,45 +576,73 @@ class _CalorieHubScreenState extends State<CalorieHubScreen> {
     required bool isIncrease,
     required BuildContext dialogContext,
   }) async {
-    if (_quickAdjustFormKey.currentState?.validate() ?? false) {
-      final userId = _supabase.auth.currentUser?.id;
-      if (userId == null) {
+    if (!(_quickAdjustFormKey.currentState?.validate() ?? false)) {
+      return;
+    }
+
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Error: User not logged in.'), backgroundColor: Colors.red),
         );
-        return;
+      }
+      return;
+    }
+
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+      });
+    }
+
+    try {
+      final caloriesValue = int.parse(_quickAdjustCaloriesController.text);
+      final operationType = isIncrease ? 'increase' : 'decrease';
+      final String activityTypeValue = 'manual_adjustment';
+      final String descriptionValue =
+          isIncrease ? 'Manual calorie addition' : 'Manual calorie subtraction';
+
+      await _supabase.from('calorie_activity').insert({
+        'user_id': userId,
+        'activity': activityTypeValue,
+        'description': descriptionValue,
+        'calories': caloriesValue,
+        'operation': operationType
+      });
+
+      if (Navigator.of(dialogContext).canPop()) {
+        Navigator.of(dialogContext).pop();
       }
 
-      try {
-        final calories = int.parse(_quickAdjustCaloriesController.text);
+      await _fetchCalorieData();
 
-        await _supabase.from('calorie_activity').insert({
-          'user_id': userId,
-          'calories': calories,
-          'description': isIncrease ? 'Manual calorie addition' : 'Manual calorie subtraction',
-          'activity': 'manual_adjustment', // As per ENUM calorie_activity_action
-          'operation': isIncrease ? 'increase' : 'decrease',
-          'activity_timestamp': DateTime.now().toIso8601String(),
-        });
-
-        if (Navigator.of(dialogContext).canPop()) {
-           Navigator.of(dialogContext).pop();
-        }
-        
-        _fetchCalorieData();
-
-        ScaffoldMessenger.of(context).showSnackBar(
+      if (mounted) {
+        scaffoldMessenger.showSnackBar(
           SnackBar(
-            content: Text('Calories ${isIncrease ? "added" : "subtracted"} successfully!'),
-            backgroundColor: Colors.green,
-          ),
+              content: Text(
+                  'Quick adjustment logged: $caloriesValue calories ${isIncrease ? "added" : "subtracted"}!'),
+              backgroundColor: Colors.green),
         );
-
-      } catch (e) {
-        print('Error quick adjusting calories: $e');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to update calories: ${e.toString()}'), backgroundColor: Colors.red),
+      }
+    } catch (e) {
+      if (mounted) {
+        if (Navigator.of(dialogContext).canPop()) { // Ensure dialog is dismissed on error too
+            Navigator.of(dialogContext).pop();
+        }
+        scaffoldMessenger.showSnackBar(
+          SnackBar(
+              content: Text('Failed to log quick adjustment: ${e.toString()}'),
+              backgroundColor: Colors.red),
         );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
       }
     }
   }
@@ -607,7 +674,7 @@ class _CalorieHubScreenState extends State<CalorieHubScreen> {
                     keyboardType: TextInputType.number,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     validator: (value) {
-                      return _validateCalorieInput(value, min: 500, max: 10000, fieldName: 'Budget');
+                      return _validateCalorieInput(value, min: _minBudgetCalories, max: _maxBudgetCalories, fieldName: 'Budget');
                     },
                   ),
                 ],
@@ -634,42 +701,189 @@ class _CalorieHubScreenState extends State<CalorieHubScreen> {
   }
 
   Future<void> _submitNewBudget(BuildContext dialogContext) async {
-    if (_editBudgetFormKey.currentState?.validate() ?? false) {
-      final userId = _supabase.auth.currentUser?.id;
-      if (userId == null) {
+    if (!(_editBudgetFormKey.currentState?.validate() ?? false)) {
+      return;
+    }
+
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null) {
+      if (mounted) { // Check mounted before showing SnackBar
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Error: User not logged in.'), backgroundColor: Colors.red),
         );
-        return;
+      }
+      return;
+    }
+
+    // Capture ScaffoldMessenger state before async operations if context might change
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    bool dialogPopped = false; // To ensure dialog is popped only once
+
+    try {
+      final newBudgetValue = int.parse(_editBudgetController.text);
+
+      await _supabase
+          .from('macro_goals')
+          .update({'daily_calorie_budget': newBudgetValue})
+          .eq('user_id', userId);
+
+      // Pop dialog first if it\'s still active and mounted
+      if (Navigator.of(dialogContext).canPop()) {
+        Navigator.of(dialogContext).pop();
+        dialogPopped = true;
       }
 
-      try {
-        final newBudgetValue = int.parse(_editBudgetController.text);
+      await _fetchCalorieData(); // Refresh the main screen data (has its own mounted checks)
 
-        await _supabase
-            .from('macro_goals')
-            .update({'daily_calorie_budget': newBudgetValue})
-            .eq('user_id', userId);
-
-        // ignore: use_build_context_synchronously
-        if (!Navigator.of(dialogContext).canPop()) return;
-        Navigator.of(dialogContext).pop(); // Dismiss dialog
-
-        _fetchCalorieData(); // Refresh the main screen data
-
-        // ignore: use_build_context_synchronously
-        ScaffoldMessenger.of(context).showSnackBar(
+      if (mounted) { // Check mounted for the main screen context
+        scaffoldMessenger.showSnackBar(
           const SnackBar(content: Text('Daily budget updated successfully!'), backgroundColor: Colors.green),
         );
+      }
 
-      } catch (e) {
-        print('Error updating daily budget: $e');
-        // ignore: use_build_context_synchronously
-        ScaffoldMessenger.of(context).showSnackBar(
+    } catch (e) {
+      // If dialog wasn\'t popped due to an error before it, try to pop it if it makes sense
+      // or just ensure a message is shown on the main screen.
+      if (!dialogPopped && Navigator.of(dialogContext).canPop()){
+          // Potentially pop here if the error means the dialog should close,
+          // but typically errors are shown within the dialog or on the main screen after pop.
+          // For now, we assume main screen SnackBar is sufficient.
+      }
+      if (mounted) { // Check mounted for the main screen context
+        scaffoldMessenger.showSnackBar(
           SnackBar(content: Text('Failed to update budget: ${e.toString()}'), backgroundColor: Colors.red),
         );
       }
     }
   }
   // --- End Edit Daily Budget ---
+
+  // For Log Exercise Dialog
+  void _showLogExerciseDialog() {
+    // Clear previous values
+    _exerciseCaloriesController.clear();
+    _exerciseDescriptionController.clear();
+
+    showDialog(
+      context: context,
+      barrierDismissible: false, // User must tap button to close
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('Log Exercise'),
+          content: SingleChildScrollView(
+            child: Form(
+              key: _logExerciseFormKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  TextFormField(
+                    controller: _exerciseCaloriesController,
+                    decoration: const InputDecoration(
+                      labelText: 'Calories*',
+                      hintText: 'e.g., 350',
+                      icon: Icon(Icons.local_fire_department),
+                    ),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    validator: (value) {
+                      return _validateCalorieInput(value, min: _minFoodLogCalories, max: _maxFoodLogCalories, fieldName: 'Calories');
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _exerciseDescriptionController,
+                    decoration: const InputDecoration(
+                      labelText: 'What exercise did you do?',
+                      hintText: 'e.g., Running, Weightlifting',
+                      icon: Icon(Icons.description_outlined),
+                    ),
+                    textCapitalization: TextCapitalization.sentences,
+                    // Can be optional, so no validator or a lenient one
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(dialogContext).pop(); // Dismiss dialog
+              },
+            ),
+            ElevatedButton(
+              child: const Text('Log'),
+              onPressed: () {
+                _submitExerciseLogForm(dialogContext); // Pass dialogContext to close it later
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _submitExerciseLogForm(BuildContext dialogContext) async {
+    if (!(_logExerciseFormKey.currentState?.validate() ?? false)) {
+      return;
+    }
+
+    final userId = _supabase.auth.currentUser?.id;
+    if (userId == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error: User not logged in.'), backgroundColor: Colors.red),
+        );
+      }
+      return;
+    }
+
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+      });
+    }
+
+    try {
+      final exerciseItem = _exerciseDescriptionController.text;
+      final caloriesValue = int.parse(_exerciseCaloriesController.text);
+
+      await _supabase.from('calorie_activity').insert({
+        'user_id': userId,
+        'activity': 'exercise',
+        'description': exerciseItem,
+        'calories': caloriesValue,
+        'operation': 'increase' // Corrected: Exercise increases available calories
+      });
+
+      if (Navigator.of(dialogContext).canPop()) {
+        Navigator.of(dialogContext).pop();
+      }
+
+      await _fetchCalorieData();
+
+      if (mounted) {
+        scaffoldMessenger.showSnackBar(
+          SnackBar(content: Text('Exercise logged successfully!'), backgroundColor: Colors.green),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        if (Navigator.of(dialogContext).canPop()) { // Ensure dialog is dismissed on error too
+            Navigator.of(dialogContext).pop();
+        }
+        scaffoldMessenger.showSnackBar(
+          SnackBar(content: Text('Failed to log exercise: ${e.toString()}'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
 } 

@@ -96,11 +96,17 @@ The database uses several tables to store this information. The main ones are in
     *   `activity` (`calorie_activity_action` ENUM): Describes the type of activity logged.
         *   `'food_intake'`: Calories logged from eating food.
         *   `'manual_adjustment'`: Calories added or subtracted manually by the user.
-    *   `description` (Text): Optional user-provided description (e.g., "Lunch - Salad", "Manual Fix").
+        *   `'exercise'`: Calories related to physical exercise.
+    *   `description` (Text): Optional user-provided description (e.g., "Lunch - Salad", "Manual Fix", "Morning Run").
     *   `activity_timestamp` (Timestamp with Time Zone): When the activity occurred (defaults to `now()`).
     *   `created_at` (Timestamp with Time Zone): Timestamp for record creation.
 *   **Relationships:** Linked many-to-one to `auth.users`.
 *   **Security:** Row Level Security (RLS) is **enabled**. Users can only manage their own calorie activities.
+*   **Constraints:**
+    *   `chk_activity_operation`: Ensures data integrity between `activity` and `operation` fields:
+        *   If `activity` is `'food_intake'`, then `operation` must be `'decrease'`.
+        *   If `activity` is `'exercise'`, then `operation` must be `'increase'`.
+        *   If `activity` is `'manual_adjustment'`, `operation` can be either `'increase'` or `'decrease'`.
 
 ## Important Functions & Triggers
 
