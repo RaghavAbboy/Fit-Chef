@@ -77,6 +77,7 @@ class _CalorieHubScreenState extends State<CalorieHubScreen> {
     int? newDailyBudget;
     int newSumDecreaseCalories = 0;
     int newSumIncreaseCalories = 0;
+    int newFoodIntakeCalories = 0; // Added for specific food intake sum
     int? newRemainingCaloriesCalculation;
     String? errorLoadingMessage; // Local variable for error message
 
@@ -101,25 +102,37 @@ class _CalorieHubScreenState extends State<CalorieHubScreen> {
 
       newDailyBudget = budgetResponse?['daily_calorie_budget'] as int? ?? _defaultDailyBudget;
 
-      // 2. Fetch Today\'s Calorie Activities
-      final now = DateTime.now();
-      final startOfDay = DateTime(now.year, now.month, now.day).toIso8601String();
-      final endOfDay = DateTime(now.year, now.month, now.day, 23, 59, 59, 999).toIso8601String();
+      // 2. Fetch Today's Calorie Activities
+      final nowLocal = DateTime.now();
+      final localStartOfDay = DateTime(nowLocal.year, nowLocal.month, nowLocal.day, 0, 0, 0, 0); // Midnight local time
+      final localEndOfDay = DateTime(nowLocal.year, nowLocal.month, nowLocal.day, 23, 59, 59, 999); // End of the local day
+
+      final utcStartOfDay = localStartOfDay.toUtc();
+      final utcEndOfDay = localEndOfDay.toUtc();
+
+      final startOfDayStringForQuery = utcStartOfDay.toIso8601String();
+      final endOfDayStringForQuery = utcEndOfDay.toIso8601String();
 
       final activityResponse = await _supabase
           .from('calorie_activity')
-          .select('calories, operation')
+          .select('calories, operation, activity') // Added 'activity'
           .eq('user_id', userId)
-          .gte('activity_timestamp', startOfDay)
-          .lte('activity_timestamp', endOfDay);
+          .gte('activity_timestamp', startOfDayStringForQuery) // Use UTC equivalent
+          .lte('activity_timestamp', endOfDayStringForQuery);  // Use UTC equivalent
 
-      for (var activity in activityResponse as List) {
-        final calories = activity['calories'] as int? ?? 0;
-        final operation = activity['operation'] as String?;
+      for (var activityEntry in activityResponse as List) { // Renamed loop variable for clarity
+        final calories = activityEntry['calories'] as int? ?? 0;
+        final operation = activityEntry['operation'] as String?;
+        final activityType = activityEntry['activity'] as String?; // Get activity type
+
         if (operation == 'decrease') {
             newSumDecreaseCalories += calories;
         } else if (operation == 'increase') {
             newSumIncreaseCalories += calories;
+        }
+
+        if (activityType == 'food_intake') { // Specifically sum food intake
+            newFoodIntakeCalories += calories;
         }
       }
       
@@ -140,7 +153,7 @@ class _CalorieHubScreenState extends State<CalorieHubScreen> {
             // No error, so commit all fetched/calculated values to the state.
             _dailyBudget = newDailyBudget;
             _editBudgetController.text = newDailyBudget?.toString() ?? _defaultDailyBudget.toString(); // Update controller text here
-            _consumedToday = newSumDecreaseCalories;
+            _consumedToday = newFoodIntakeCalories; // Changed to newFoodIntakeCalories
             _remainingCalories = newRemainingCaloriesCalculation;
             _errorMessage = null; // Clear any previous error message if successful
           }
