@@ -142,6 +142,42 @@ flutter devices
 
 **Tip:** To log the output of any command you run (for sharing or debugging), use the `run_and_log.sh` script as described in the Project Scripts section below.
 
+## Useful Git Commands
+
+Here are a few basic Git commands that are helpful for day-to-day development:
+
+1.  **Checking your current local branch:**
+    Knowing which branch you are currently working on is crucial. You can check this with:
+    ```bash
+    git branch --show-current
+    ```
+    Alternatively, `git status` will also show your current branch at the top of its output.
+
+2.  **Checking remote branch information:**
+    *   **To see your local record of the remote's default branch** (usually `origin`):
+        This command shows what your local Git repository thinks is the default branch on the `origin` remote (e.g., `main` or `dev`).
+        ```bash
+        git remote show origin | grep 'HEAD branch'
+        ```
+        Your local repository's knowledge of the remote is updated when you run `git fetch`.
+    *   **To list all remote-tracking branches** known to your local repository:
+        This shows all branches on the remote that your local repository is aware of (e.g., `origin/main`, `origin/dev`, `origin/feature-xyz`).
+        ```bash
+        git branch -r
+        ```
+        Run `git fetch origin` to update this list with the latest from the remote.
+
+3.  **How to switch your local branch:**
+    To switch your working directory to a different existing local branch (e.g., to `dev`):
+    ```bash
+    git checkout dev
+    ```
+    If the branch `dev` doesn't exist locally but exists on the remote as `origin/dev`, you can create a local `dev` branch that tracks the remote one and switch to it using:
+    ```bash
+    git checkout -t origin/dev
+    ```
+    Or, more simply, if a local branch with that name doesn't exist but `origin/dev` does, `git checkout dev` will often do the right thing and set up tracking automatically.
+
 ## Project Scripts
 
 This project provides several scripts to automate common tasks. Make sure each script is executable:
