@@ -152,18 +152,65 @@ chmod +x setup.sh git_push.sh git_pull.sh run_app.sh deploy.sh
 | Script           | Purpose                                                                                 | Usage Example                                  |
 | ---------------- | --------------------------------------------------------------------------------------- | ---------------------------------------------- |
 | `setup.sh`       | Sets up the Flutter project: checks for tools, installs dependencies, cleans builds.     | `./setup.sh`                                   |
-| `git_push.sh`    | Stashes changes, pulls latest, restores changes, adds, commits, and pushes to git.      | `./git_push.sh "your commit message"`          |
-| `git_pull.sh`    | Stashes changes, pulls latest from git, restores changes.                               | `./git_pull.sh`                                |
+| `git_push.sh`    | Stashes changes, pulls latest, restores changes, adds, commits, and pushes to git.      | `./git_push.sh "commit message" [branch_name]` |
+| `git_pull.sh`    | Stashes changes, pulls latest from git, restores changes.                               | `./git_pull.sh [branch_name]`                  |
 | `run_app.sh`     | Runs the Flutter app in iOS, Android, or Web mode based on the argument provided.       | `./run_app.sh ios`<br>`./run_app.sh android <android_device_id>`<br>`./run_app.sh web` |
 | `run_and_log.sh` | Runs any command, logs its output to last_command_output.txt, and prints the output.    | `./run_and_log.sh ls -la`                      |
 | `deploy.sh`      | Triggers a manual deployment to AWS Amplify for the main branch.                        | `./deploy.sh`                                  |
 
 **Details:**
 - `setup.sh`: Ensures your environment is ready for development (Flutter, CocoaPods, dependencies, clean build).
-- `git_push.sh`: Automates the process of safely pushing your changes to the current git branch. Requires a commit message.
-- `git_pull.sh`: Safely pulls the latest changes from the current git branch, preserving your local changes.
+- `git_push.sh`: Automates pushing changes.
+    - Fetches the latest from `origin`.
+    - Switches your local working copy to the remote's default branch (e.g., `main` or `dev`).
+    - Stashes local changes, pulls the latest for the default branch, and re-applies stashed changes.
+    - Adds all current files and commits them with the provided `commit message`.
+    - If `branch_name` (optional) is provided, it pushes the commits to that specified branch on `origin`.
+    - If no `branch_name` is provided, it pushes to the remote's default branch.
+    - Usage: `./git_push.sh "your commit message"` or `./git_push.sh "your commit message" your_target_branch`
+- `git_pull.sh`: Safely pulls the latest changes.
+    - Fetches the latest from `origin` (and prunes stale remote branches).
+    - If `branch_name` (optional) is provided:
+        - Switches your local working copy to `branch_name` (creating it locally if it only exists on `origin`).
+        - Stashes local changes, pulls the latest for `branch_name` from `origin`, and re-applies stashed changes.
+    - If no `branch_name` is provided:
+        - Switches your local working copy to the remote's default branch (e.g., `main` or `dev`).
+        - Stashes local changes, pulls the latest for the default branch from `origin`, and re-applies stashed changes.
+    - Usage: `./git_pull.sh` or `./git_pull.sh your_target_branch`
 - `run_app.sh`: Runs the Flutter app in the selected mode: iOS (opens Simulator), Android (requires device ID), or Web (Chrome browser).
 - `run_and_log.sh`: Runs any command you provide, logs its output (stdout and stderr) to `last_command_output.txt` (overwriting previous output), and prints the output to the terminal. Useful for sharing command output with others or for debugging.
+
+## Development Workflow & Branching Strategy
+
+This project uses a branching model to manage development, testing, and production releases. The primary branches involved are:
+
+-   **`dev`**: This is the main development branch. All new features, bug fixes, and ongoing development work should be based on and merged into this branch.
+    -   Commit frequently to your feature branches and merge into `dev` once a feature is complete or a logical chunk of work is done.
+    -   Use the `./git_push.sh "Your message" dev` command (or simply `./git_push.sh "Your message"` if `dev` is your remote's default) to push changes to this branch.
+
+-   **`stage`**: Once features in the `dev` branch are considered stable and ready for more comprehensive testing (e.g., UAT or internal QA), they should be merged into the `stage` branch.
+    -   The `stage` branch should represent a release candidate.
+    -   Deploy this branch to a staging environment for testing.
+    -   To push `dev` to `stage` (after ensuring your local `dev` is up-to-date and you are on it):
+        1.  Ensure your local `dev` branch is current: `./git_pull.sh dev`
+        2.  Switch to `stage` locally, creating it if it doesn't exist and ensuring it's up-to-date: `./git_pull.sh stage`
+        3.  Merge `dev` into `stage`: `git merge dev` (resolve any conflicts)
+        4.  Push the updated `stage` branch: `./git_push.sh "Merge dev into stage for testing" stage`
+
+-   **`main`**: This branch represents the production-ready code. Only stable, tested code from the `stage` branch should be merged into `main`.
+    -   Deployments to the production environment should be made from this branch.
+    -   To promote `stage` to `main`:
+        1.  Ensure your local `stage` branch is current: `./git_pull.sh stage`
+        2.  Switch to `main` locally, creating it if it doesn't exist and ensuring it's up-to-date: `./git_pull.sh main`
+        3.  Merge `stage` into `main`: `git merge stage` (resolve any conflicts)
+        4.  Push the updated `main` branch: `./git_push.sh "Release to production from stage" main`
+        5.  Optionally, tag the release: `git tag -a v1.x.x -m "Version 1.x.x release"` and `git push origin v1.x.x`
+
+**General Guidelines:**
+
+*   **Feature Branches:** For any new feature or significant bug fix, create a new branch off `dev` (e.g., `feature/new-login` or `fix/calorie-bug`). Once complete, merge this feature branch back into `dev`.
+*   **Pull Regularly:** Before starting new work or pushing changes, always pull the latest from the respective branch to avoid conflicts (`./git_pull.sh branch_name`).
+*   **Test Thoroughly:** Ensure changes are tested on `dev` and especially on `stage` before merging to `main`.
 
 # Web mode uses port 3000 by default.
 
