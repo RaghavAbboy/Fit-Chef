@@ -86,7 +86,7 @@ echo "💬 Committing with message: $COMMIT_MESSAGE"
 git commit -m "$COMMIT_MESSAGE"
 
 # Push to origin with the determined branch name
-echo "⬆️  Pushing to origin '$branch_to_push_to'..."
-git push origin "$branch_to_push_to"
+echo "⬆️  Pushing local '$current_branch' to origin '$branch_to_push_to'..."
+git push origin "$current_branch:$branch_to_push_to"
 
 echo "✅ Done! Changes have been pushed to remote repository" 
