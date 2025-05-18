@@ -26,6 +26,7 @@ class _CalorieHubScreenState extends State<CalorieHubScreen> {
   int? _remainingCalories;
   bool _isLoading = true;
   String? _errorMessage;
+  List<Map<String, dynamic>> _activityHistory = []; // Add this line to store activity history
 
   final _supabase = Supabase.instance.client;
 
@@ -77,11 +78,11 @@ class _CalorieHubScreenState extends State<CalorieHubScreen> {
     int? newDailyBudget;
     int newSumDecreaseCalories = 0;
     int newSumIncreaseCalories = 0;
-    int newFoodIntakeCalories = 0; // Added for specific food intake sum
+    int newFoodIntakeCalories = 0;
     int? newRemainingCaloriesCalculation;
-    String? errorLoadingMessage; // Local variable for error message
+    String? errorLoadingMessage;
+    List<Map<String, dynamic>> newActivityHistory = [];
 
-    // Initial setState to show loading and clear previous error message from UI.
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -104,8 +105,8 @@ class _CalorieHubScreenState extends State<CalorieHubScreen> {
 
       // 2. Fetch Today's Calorie Activities
       final nowLocal = DateTime.now();
-      final localStartOfDay = DateTime(nowLocal.year, nowLocal.month, nowLocal.day, 0, 0, 0, 0); // Midnight local time
-      final localEndOfDay = DateTime(nowLocal.year, nowLocal.month, nowLocal.day, 23, 59, 59, 999); // End of the local day
+      final localStartOfDay = DateTime(nowLocal.year, nowLocal.month, nowLocal.day, 0, 0, 0, 0);
+      final localEndOfDay = DateTime(nowLocal.year, nowLocal.month, nowLocal.day, 23, 59, 59, 999);
 
       final utcStartOfDay = localStartOfDay.toUtc();
       final utcEndOfDay = localEndOfDay.toUtc();
@@ -115,51 +116,82 @@ class _CalorieHubScreenState extends State<CalorieHubScreen> {
 
       final activityResponse = await _supabase
           .from('calorie_activity')
-          .select('calories, operation, activity') // Added 'activity'
+          .select('id, calories, operation, activity, description, activity_timestamp')
           .eq('user_id', userId)
-          .gte('activity_timestamp', startOfDayStringForQuery) // Use UTC equivalent
-          .lte('activity_timestamp', endOfDayStringForQuery);  // Use UTC equivalent
+          .gte('activity_timestamp', startOfDayStringForQuery)
+          .lte('activity_timestamp', endOfDayStringForQuery)
+          .order('activity_timestamp', ascending: false);
 
-      for (var activityEntry in activityResponse as List) { // Renamed loop variable for clarity
+      for (final activityEntry in activityResponse) {
         final calories = activityEntry['calories'] as int? ?? 0;
         final operation = activityEntry['operation'] as String?;
-        final activityType = activityEntry['activity'] as String?; // Get activity type
+        final activityType = activityEntry['activity'] as String?;
+        final description = activityEntry['description'] as String? ?? '';
+        final timestamp = activityEntry['activity_timestamp'] as String?;
+        final id = activityEntry['id'];
+
+        // Add to activity history with ID
+        newActivityHistory.add({
+          'id': id,
+          'calories': calories,
+          'operation': operation,
+          'activity': activityType,
+          'description': description,
+          'timestamp': timestamp,
+        });
 
         if (operation == 'decrease') {
-            newSumDecreaseCalories += calories;
+          newSumDecreaseCalories += calories;
         } else if (operation == 'increase') {
-            newSumIncreaseCalories += calories;
+          newSumIncreaseCalories += calories;
         }
 
-        if (activityType == 'food_intake') { // Specifically sum food intake
-            newFoodIntakeCalories += calories;
+        if (activityType == 'food_intake') {
+          newFoodIntakeCalories += calories;
         }
       }
-      
-      // Calculate remaining calories using the fetched and calculated local values
+
       newRemainingCaloriesCalculation = (newDailyBudget ?? _defaultDailyBudget) - newSumDecreaseCalories + newSumIncreaseCalories;
 
     } catch (e) {
-       errorLoadingMessage = 'Failed to load calorie data: ${e.toString()}';
+      errorLoadingMessage = 'Failed to load calorie data: ${e.toString()}';
     } finally {
       if (mounted) {
         setState(() {
           if (errorLoadingMessage != null) {
             _errorMessage = errorLoadingMessage;
-            // When an error occurs, we might not want to update calorie values,
-            // or reset them to a default/null state. For now, we only set the error message.
-            // The calorie values displayed will be from the last successful fetch or initial state.
           } else {
-            // No error, so commit all fetched/calculated values to the state.
             _dailyBudget = newDailyBudget;
-            _editBudgetController.text = newDailyBudget?.toString() ?? _defaultDailyBudget.toString(); // Update controller text here
-            _consumedToday = newFoodIntakeCalories; // Changed to newFoodIntakeCalories
+            _editBudgetController.text = newDailyBudget?.toString() ?? _defaultDailyBudget.toString();
+            _consumedToday = newFoodIntakeCalories;
             _remainingCalories = newRemainingCaloriesCalculation;
-            _errorMessage = null; // Clear any previous error message if successful
+            _activityHistory = newActivityHistory;
+            _errorMessage = null;
           }
           _isLoading = false;
         });
       }
+    }
+  }
+
+  // Add this new method to format the timestamp
+  String _formatTimestamp(String? timestamp) {
+    if (timestamp == null) return '';
+    final dateTime = DateTime.parse(timestamp).toLocal();
+    return '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+  }
+
+  // Add this new method to get the appropriate icon for each activity
+  Icon _getActivityIcon(String? activity) {
+    switch (activity) {
+      case 'food_intake':
+        return const Icon(Icons.fastfood_outlined, color: Colors.orange);
+      case 'exercise':
+        return const Icon(Icons.fitness_center_outlined, color: Colors.green);
+      case 'manual_adjustment':
+        return const Icon(Icons.edit_outlined, color: Colors.blue);
+      default:
+        return const Icon(Icons.info_outline, color: Colors.grey);
     }
   }
 
@@ -173,17 +205,17 @@ class _CalorieHubScreenState extends State<CalorieHubScreen> {
           onPressed: () => Navigator.pop(context),
         ),
       ),
-      body: Column( // Main body is now a Column
+      body: Column(
         children: [
-          Expanded( // Scrollable content takes up available space
+          Expanded(
             child: RefreshIndicator(
               onRefresh: _fetchCalorieData,
-              child: ListView( // Your existing ListView for scrollable content
+              child: ListView(
                 children: [
-                  Padding( // Keep padding around the scrollable content
+                  Padding(
                     padding: const EdgeInsets.all(16.0),
                     child: _isLoading
-                        ? Center(child: const CircularProgressIndicator())
+                        ? const Center(child: CircularProgressIndicator())
                         : _errorMessage != null
                             ? Center(
                                 child: Text(
@@ -192,8 +224,8 @@ class _CalorieHubScreenState extends State<CalorieHubScreen> {
                                   textAlign: TextAlign.center,
                                 ),
                               )
-                            : Column( // This Column is for the scrollable part
-                                mainAxisAlignment: MainAxisAlignment.start, // Align to start
+                            : Column(
+                                mainAxisAlignment: MainAxisAlignment.start,
                                 crossAxisAlignment: CrossAxisAlignment.center,
                                 children: [
                                   // --- Content that stays in the main/upper scrollable part ---
@@ -264,6 +296,81 @@ class _CalorieHubScreenState extends State<CalorieHubScreen> {
                                     icon: const Icon(Icons.fitness_center_outlined),
                                     label: const Text('Log Exercise'),
                                   ),
+                                  const SizedBox(height: 24),
+                                  // Add the new Activity History section
+                                  const Text(
+                                    'Today\'s Activity History',
+                                    style: TextStyle(
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  if (_activityHistory.isEmpty)
+                                    const Padding(
+                                      padding: EdgeInsets.all(16.0),
+                                      child: Text(
+                                        'No activities logged today',
+                                        style: TextStyle(
+                                          color: Colors.grey,
+                                          fontStyle: FontStyle.italic,
+                                        ),
+                                      ),
+                                    )
+                                  else
+                                    Center(
+                                      child: SizedBox(
+                                        width: MediaQuery.of(context).size.width * 0.5, // 50% of screen width
+                                        child: ListView.builder(
+                                          shrinkWrap: true,
+                                          physics: const NeverScrollableScrollPhysics(),
+                                          itemCount: _activityHistory.length,
+                                          itemBuilder: (context, index) {
+                                            final activity = _activityHistory[index];
+                                            final isIncrease = activity['operation'] == 'increase';
+                                            return Card(
+                                              margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                                              child: ListTile(
+                                                leading: _getActivityIcon(activity['activity']),
+                                                title: Text(
+                                                  activity['description'] ?? 'No description',
+                                                  style: const TextStyle(fontWeight: FontWeight.w500),
+                                                ),
+                                                subtitle: Text(
+                                                  _formatTimestamp(activity['timestamp']),
+                                                  style: TextStyle(
+                                                    color: Colors.grey[600],
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
+                                                trailing: Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Text(
+                                                      '${isIncrease ? '+' : '-'}${activity['calories']} kcal',
+                                                      style: TextStyle(
+                                                        color: isIncrease ? Colors.green : Colors.red,
+                                                        fontWeight: FontWeight.bold,
+                                                      ),
+                                                    ),
+                                                    IconButton(
+                                                      icon: const Icon(Icons.edit_outlined, size: 20),
+                                                      onPressed: () => _showEditActivityDialog(activity),
+                                                      tooltip: 'Edit',
+                                                    ),
+                                                    IconButton(
+                                                      icon: const Icon(Icons.delete_outline, size: 20),
+                                                      onPressed: () => _deleteActivity(activity),
+                                                      tooltip: 'Delete',
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                        ),
+                                      ),
+                                    ),
                                 ],
                               ),
                   ),
@@ -423,6 +530,17 @@ class _CalorieHubScreenState extends State<CalorieHubScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
                   TextFormField(
+                    controller: _descriptionController,
+                    decoration: const InputDecoration(
+                      labelText: 'What did you eat?',
+                      hintText: 'e.g., Apple and peanut butter',
+                      icon: Icon(Icons.description_outlined),
+                    ),
+                    textCapitalization: TextCapitalization.sentences,
+                    // Can be optional, so no validator or a lenient one
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
                     controller: _caloriesController,
                     decoration: const InputDecoration(
                       labelText: 'Calories*',
@@ -434,17 +552,6 @@ class _CalorieHubScreenState extends State<CalorieHubScreen> {
                     validator: (value) {
                       return _validateCalorieInput(value, min: _minFoodLogCalories, max: _maxFoodLogCalories, fieldName: 'Calories');
                     },
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _descriptionController,
-                    decoration: const InputDecoration(
-                      labelText: 'What did you eat?',
-                      hintText: 'e.g., Apple and peanut butter',
-                      icon: Icon(Icons.description_outlined),
-                    ),
-                    textCapitalization: TextCapitalization.sentences,
-                    // Can be optional, so no validator or a lenient one
                   ),
                 ],
               ),
@@ -790,6 +897,17 @@ class _CalorieHubScreenState extends State<CalorieHubScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: <Widget>[
                   TextFormField(
+                    controller: _exerciseDescriptionController,
+                    decoration: const InputDecoration(
+                      labelText: 'What exercise did you do?',
+                      hintText: 'e.g., Running, Weightlifting',
+                      icon: Icon(Icons.description_outlined),
+                    ),
+                    textCapitalization: TextCapitalization.sentences,
+                    // Can be optional, so no validator or a lenient one
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
                     controller: _exerciseCaloriesController,
                     decoration: const InputDecoration(
                       labelText: 'Calories*',
@@ -801,17 +919,6 @@ class _CalorieHubScreenState extends State<CalorieHubScreen> {
                     validator: (value) {
                       return _validateCalorieInput(value, min: _minFoodLogCalories, max: _maxFoodLogCalories, fieldName: 'Calories');
                     },
-                  ),
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _exerciseDescriptionController,
-                    decoration: const InputDecoration(
-                      labelText: 'What exercise did you do?',
-                      hintText: 'e.g., Running, Weightlifting',
-                      icon: Icon(Icons.description_outlined),
-                    ),
-                    textCapitalization: TextCapitalization.sentences,
-                    // Can be optional, so no validator or a lenient one
                   ),
                 ],
               ),
@@ -896,6 +1003,123 @@ class _CalorieHubScreenState extends State<CalorieHubScreen> {
         setState(() {
           _isLoading = false;
         });
+      }
+    }
+  }
+
+  // Add these new methods for edit and delete functionality
+  void _showEditActivityDialog(Map<String, dynamic> activity) {
+    final controller = TextEditingController(text: activity['description']);
+    final caloriesController = TextEditingController(text: activity['calories'].toString());
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('Edit Activity'),
+          content: SingleChildScrollView(
+            child: Form(
+              key: _foodLogFormKey, // Reuse existing form key
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  TextFormField(
+                    controller: caloriesController,
+                    decoration: const InputDecoration(
+                      labelText: 'Calories*',
+                      hintText: 'e.g., 350',
+                      icon: Icon(Icons.local_fire_department),
+                    ),
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    validator: (value) {
+                      return _validateCalorieInput(value, min: _minFoodLogCalories, max: _maxFoodLogCalories, fieldName: 'Calories');
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: controller,
+                    decoration: const InputDecoration(
+                      labelText: 'Description',
+                      hintText: 'e.g., Apple and peanut butter',
+                      icon: Icon(Icons.description_outlined),
+                    ),
+                    textCapitalization: TextCapitalization.sentences,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () => Navigator.of(dialogContext).pop(),
+            ),
+            ElevatedButton(
+              child: const Text('Save'),
+              onPressed: () async {
+                if (!(_foodLogFormKey.currentState?.validate() ?? false)) return;
+
+                try {
+                  await _supabase
+                      .from('calorie_activity')
+                      .update({
+                        'description': controller.text,
+                        'calories': int.parse(caloriesController.text),
+                      })
+                      .eq('id', activity['id']);
+
+                  if (Navigator.of(dialogContext).canPop()) {
+                    Navigator.of(dialogContext).pop();
+                  }
+                  await _fetchCalorieData();
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Failed to update activity: ${e.toString()}'), backgroundColor: Colors.red),
+                    );
+                  }
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _deleteActivity(Map<String, dynamic> activity) async {
+    try {
+      // First verify we have a valid ID
+      final activityId = activity['id'];
+      if (activityId == null) {
+        throw 'Activity ID is missing';
+      }
+
+      // Delete the activity
+      final response = await _supabase
+          .from('calorie_activity')
+          .delete()
+          .eq('id', activityId)
+          .select()
+          .single();
+
+      if (response == null) {
+        throw 'Failed to delete activity';
+      }
+
+      await _fetchCalorieData();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Activity deleted successfully!'), backgroundColor: Colors.green),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to delete activity: ${e.toString()}'), backgroundColor: Colors.red),
+        );
       }
     }
   }
