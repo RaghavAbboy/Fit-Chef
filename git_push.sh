@@ -3,7 +3,7 @@
 # Check if a commit message was provided
 if [ "$#" -lt 1 ] || [ "$#" -gt 2 ]; then
     echo "❌ Error: Please provide a commit message, and optionally a target branch name."
-    echo "Usage: ./git_push.sh "your commit message" [target_branch_name]"
+    echo "Usage: ./git_push.sh \"your commit message\" [target_branch_name]"
     exit 1
 fi
 
@@ -21,45 +21,48 @@ echo "🚀 Starting git operations..."
 echo "📡 Fetching latest state from origin..."
 git fetch origin
 
-# Determine the remote's default branch
-echo "🤔 Determining remote's default branch..."
-default_branch=$(git symbolic-ref refs/remotes/origin/HEAD | sed 's@^refs/remotes/origin/@@')
-
-if [ -z "$default_branch" ]; then
-  echo "❌ Error: Could not determine the remote's default branch. Aborting."
-  exit 1
-fi
-echo "ℹ️ Remote's default branch is '$default_branch'."
-
-# Get the current branch name
-current_branch=$(git rev-parse --abbrev-ref HEAD)
-if [ -z "$current_branch" ]; then
-    echo "❌ Error: Not in a git repository or no current branch. Aborting."
-    exit 1
-fi
-echo "ℹ️ Current local branch is '$current_branch'."
-
-# Switch to the default branch if not already on it
-if [ "$current_branch" != "$default_branch" ]; then
-  echo "🔄 Switching to the default branch ('$default_branch')..."
-  if git checkout "$default_branch"; then
-    echo "✅ Successfully switched to branch '$default_branch'."
-    # Update current_branch variable after successful checkout
-    current_branch="$default_branch"
-  else
-    echo "❌ Error: Failed to switch to branch '$default_branch'. Please check for uncommitted changes or other issues. Aborting."
-    exit 1
-  fi
-else
-  echo "👍 Already on the default branch ('$default_branch')."
-fi
-
-# Determine the final branch to push to
-branch_to_push_to="$current_branch" # Default to the current (default) branch
+# If a target branch is specified, skip determining the remote's default branch
 if [ ! -z "$SPECIFIED_TARGET_BRANCH" ]; then
     branch_to_push_to="$SPECIFIED_TARGET_BRANCH"
+    # Get the current branch name
+    current_branch=$(git rev-parse --abbrev-ref HEAD)
+    if [ -z "$current_branch" ]; then
+        echo "❌ Error: Not in a git repository or no current branch. Aborting."
+        exit 1
+    fi
+    echo "ℹ️ Current local branch is '$current_branch'."
     echo "ℹ️ Will attempt to push to specified branch: '$branch_to_push_to'"
 else
+    # Determine the remote's default branch
+    echo "🤔 Determining remote's default branch..."
+    default_branch=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's@^refs/remotes/origin/@@')
+    if [ -z "$default_branch" ]; then
+      echo "❌ Error: Could not determine the remote's default branch. Aborting."
+      exit 1
+    fi
+    echo "ℹ️ Remote's default branch is '$default_branch'."
+    # Get the current branch name
+    current_branch=$(git rev-parse --abbrev-ref HEAD)
+    if [ -z "$current_branch" ]; then
+        echo "❌ Error: Not in a git repository or no current branch. Aborting."
+        exit 1
+    fi
+    echo "ℹ️ Current local branch is '$current_branch'."
+    # Switch to the default branch if not already on it
+    if [ "$current_branch" != "$default_branch" ]; then
+      echo "🔄 Switching to the default branch ('$default_branch')..."
+      if git checkout "$default_branch"; then
+        echo "✅ Successfully switched to branch '$default_branch'."
+        # Update current_branch variable after successful checkout
+        current_branch="$default_branch"
+      else
+        echo "❌ Error: Failed to switch to branch '$default_branch'. Please check for uncommitted changes or other issues. Aborting."
+        exit 1
+      fi
+    else
+      echo "👍 Already on the default branch ('$default_branch')."
+    fi
+    branch_to_push_to="$current_branch" # Default to the current (default) branch
     echo "ℹ️ Will push to the current default branch: '$branch_to_push_to'"
 fi
 
@@ -69,7 +72,7 @@ echo "🚀 Starting git push process on local branch '$current_branch', targetin
 echo "📦 Stashing current changes..."
 git stash
 
-# Pull latest changes first (for the current local default branch)
+# Pull latest changes first (for the current local branch)
 echo "⬇️  Pulling latest changes for local branch '$current_branch' from origin..."
 git pull origin "$current_branch"
 

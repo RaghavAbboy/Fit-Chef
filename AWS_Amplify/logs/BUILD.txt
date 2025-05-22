@@ -1,0 +1,26 @@
+2025-04-27T00:12:03.340Z [INFO]: # Cloning repository: git@github.com:RaghavAbboy/Fit-Chef.git
+2025-04-27T00:12:04.159Z [INFO]: 
+2025-04-27T00:12:04.159Z [INFO]: Cloning into 'Fit-Chef'...
+2025-04-27T00:12:04.160Z [INFO]: # Checking for Git submodules at: /codebuild/output/src1823060991/src/Fit-Chef/.gitmodules
+2025-04-27T00:12:04.165Z [INFO]: # Retrieving environment cache...
+2025-04-27T00:12:04.201Z [WARNING]: ! Unable to write cache: {"code":"ERR_BAD_REQUEST","message":"Request failed with status code 404"})}
+2025-04-27T00:12:04.201Z [INFO]: ---- Setting Up SSM Secrets ----
+2025-04-27T00:12:04.201Z [INFO]: SSM params {"Path":"/amplify/d1k4ggaq86w9ev/main/","WithDecryption":true}
+2025-04-27T00:12:04.254Z [WARNING]: !Failed to set up process.env.secrets
+2025-04-27T00:12:04.999Z [INFO]: # No package override configuration found.
+2025-04-27T00:12:05.002Z [INFO]: # Retrieving cache...
+2025-04-27T00:12:05.042Z [INFO]: # Retrieved cache
+2025-04-27T00:12:09.306Z [INFO]: ## Starting Backend Build
+                                 ## Checking for associated backend environment...
+                                 ## No backend environment association found, continuing...
+                                 ## Completed Backend Build
+2025-04-27T00:12:09.312Z [INFO]: {"backendDuration": 0}
+                                 ## Starting Frontend Build
+                                 # Starting phase: build
+                                 # Executing command: flutter build web
+2025-04-27T00:12:09.312Z [WARNING]: flutter: command not found
+2025-04-27T00:12:09.385Z [ERROR]: !!! Build failed
+2025-04-27T00:12:09.385Z [ERROR]: !!! Error: Command failed with exit code 127
+2025-04-27T00:12:09.385Z [INFO]: # Starting environment caching...
+2025-04-27T00:12:09.386Z [INFO]: # Environment caching completed
+
