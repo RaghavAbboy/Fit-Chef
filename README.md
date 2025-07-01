@@ -1,6 +1,6 @@
 # Cursor Fitchef
 
-A Flutter project for FitChef application.
+A Flutter based nutrition and habits focused app. Build consistency in your habits and charge towards your goals!
 
 ## Architecture Documentation
 
