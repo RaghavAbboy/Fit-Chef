@@ -122,6 +122,8 @@ class _CalorieHubScreenState extends State<CalorieHubScreen> {
           .lte('activity_timestamp', endOfDayStringForQuery)
           .order('activity_timestamp', ascending: false);
 
+      print('Debug: Activity Response: $activityResponse'); // Debug log
+
       for (final activityEntry in activityResponse) {
         final calories = activityEntry['calories'] as int? ?? 0;
         final operation = activityEntry['operation'] as String?;
@@ -129,6 +131,8 @@ class _CalorieHubScreenState extends State<CalorieHubScreen> {
         final description = activityEntry['description'] as String? ?? '';
         final timestamp = activityEntry['activity_timestamp'] as String?;
         final id = activityEntry['id'];
+
+        print('Debug: Processing activity: $activityType, $description, $calories'); // Debug log
 
         // Add to activity history with ID
         newActivityHistory.add({
@@ -150,6 +154,8 @@ class _CalorieHubScreenState extends State<CalorieHubScreen> {
           newFoodIntakeCalories += calories;
         }
       }
+
+      print('Debug: Final activity history: $newActivityHistory'); // Debug log
 
       newRemainingCaloriesCalculation = (newDailyBudget ?? _defaultDailyBudget) - newSumDecreaseCalories + newSumIncreaseCalories;
 
@@ -318,57 +324,55 @@ class _CalorieHubScreenState extends State<CalorieHubScreen> {
                                       ),
                                     )
                                   else
-                                    Center(
-                                      child: SizedBox(
-                                        width: MediaQuery.of(context).size.width * 0.5, // 50% of screen width
-                                        child: ListView.builder(
-                                          shrinkWrap: true,
-                                          physics: const NeverScrollableScrollPhysics(),
-                                          itemCount: _activityHistory.length,
-                                          itemBuilder: (context, index) {
-                                            final activity = _activityHistory[index];
-                                            final isIncrease = activity['operation'] == 'increase';
-                                            return Card(
-                                              margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-                                              child: ListTile(
-                                                leading: _getActivityIcon(activity['activity']),
-                                                title: Text(
-                                                  activity['description'] ?? 'No description',
-                                                  style: const TextStyle(fontWeight: FontWeight.w500),
-                                                ),
-                                                subtitle: Text(
-                                                  _formatTimestamp(activity['timestamp']),
-                                                  style: TextStyle(
-                                                    color: Colors.grey[600],
-                                                    fontSize: 12,
-                                                  ),
-                                                ),
-                                                trailing: Row(
-                                                  mainAxisSize: MainAxisSize.min,
-                                                  children: [
-                                                    Text(
-                                                      '${isIncrease ? '+' : '-'}${activity['calories']} kcal',
-                                                      style: TextStyle(
-                                                        color: isIncrease ? Colors.green : Colors.red,
-                                                        fontWeight: FontWeight.bold,
-                                                      ),
-                                                    ),
-                                                    IconButton(
-                                                      icon: const Icon(Icons.edit_outlined, size: 20),
-                                                      onPressed: () => _showEditActivityDialog(activity),
-                                                      tooltip: 'Edit',
-                                                    ),
-                                                    IconButton(
-                                                      icon: const Icon(Icons.delete_outline, size: 20),
-                                                      onPressed: () => _deleteActivity(activity),
-                                                      tooltip: 'Delete',
-                                                    ),
-                                                  ],
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                                      child: ListView.builder(
+                                        shrinkWrap: true,
+                                        physics: const NeverScrollableScrollPhysics(),
+                                        itemCount: _activityHistory.length,
+                                        itemBuilder: (context, index) {
+                                          final activity = _activityHistory[index];
+                                          final isIncrease = activity['operation'] == 'increase';
+                                          return Card(
+                                            margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                                            child: ListTile(
+                                              leading: _getActivityIcon(activity['activity']),
+                                              title: Text(
+                                                activity['description'] ?? 'No description',
+                                                style: const TextStyle(fontWeight: FontWeight.w500),
+                                              ),
+                                              subtitle: Text(
+                                                _formatTimestamp(activity['timestamp']),
+                                                style: TextStyle(
+                                                  color: Colors.grey[600],
+                                                  fontSize: 12,
                                                 ),
                                               ),
-                                            );
-                                          },
-                                        ),
+                                              trailing: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  Text(
+                                                    '${isIncrease ? '+' : '-'}${activity['calories']} kcal',
+                                                    style: TextStyle(
+                                                      color: isIncrease ? Colors.green : Colors.red,
+                                                      fontWeight: FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                  IconButton(
+                                                    icon: const Icon(Icons.edit_outlined, size: 20),
+                                                    onPressed: () => _showEditActivityDialog(activity),
+                                                    tooltip: 'Edit',
+                                                  ),
+                                                  IconButton(
+                                                    icon: const Icon(Icons.delete_outline, size: 20),
+                                                    onPressed: () => _deleteActivity(activity),
+                                                    tooltip: 'Delete',
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          );
+                                        },
                                       ),
                                     ),
                                 ],
