@@ -1,4 +1,4 @@
-# Cursor Fitchef
+# Fitchef - A consistency training app for Routine and Nutrition management.
 
 A Flutter based nutrition and habits focused app. Build consistency in your habits and charge towards your goals!
 
